@@ -4,6 +4,10 @@
 
 @layer utilities {
   .mask-gradient {
-    background: radial-gradient(70.71% 70.71% at 50% 50%, rgba(0, 0, 0, 0) 20%, #000000 80%);
+    background: radial-gradient(
+      70.71% 70.71% at 50% 50%,
+      rgba(0, 0, 0, 0) 20%,
+      #000000 80%
+    );
   }
 }

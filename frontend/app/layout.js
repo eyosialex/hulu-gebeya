@@ -1,4 +1,4 @@
-import '../shared/styles/tailwind.css';
+import "../shared/styles/tailwind.css";
 
 export default function RootLayout({ children }) {
   return (
@@ -7,9 +7,7 @@ export default function RootLayout({ children }) {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>Smart Map</title>
       </head>
-      <body>
-        {children}
-      </body>
+      <body>{children}</body>
     </html>
   );
 }
