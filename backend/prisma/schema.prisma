@@ -1,0 +1,90 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum LocationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum VoteType {
+  UP
+  DOWN
+}
+
+model User {
+  id              String   @id @default(uuid())
+  name            String
+  email           String   @unique
+  password        String
+  reputationScore Float    @default(0)
+  points          Int      @default(0)
+  coins           Int      @default(0)
+  role            Role     @default(USER)
+  createdAt       DateTime @default(now())
+
+  locations       Location[]
+  verifications   Verification[]
+  activityLogs    ActivityLog[]
+}
+
+model Location {
+  id                String   @id @default(uuid())
+  name              String
+  description       String?
+  category          String
+  latitude          Float
+  longitude         Float
+  imageUrl          String?
+  verificationScore Float    @default(0)
+  status            LocationStatus @default(PENDING)
+  createdAt         DateTime @default(now())
+
+  createdBy   User   @relation(fields: [createdById], references: [id])
+  createdById String
+
+  verifications Verification[]
+}
+
+model Verification {
+  id         String   @id @default(uuid())
+  vote       VoteType
+  confidence Float?
+  createdAt  DateTime @default(now())
+
+  user   User     @relation(fields: [userId], references: [id])
+  userId String
+
+  location   Location @relation(fields: [locationId], references: [id])
+  locationId String
+
+  @@unique([userId, locationId])
+}
+
+model ActivityLog {
+  id        String   @id @default(uuid())
+  action    String   // e.g., "LOCATION_CREATED", "LOCATION_VERIFIED"
+  details   String?
+  points    Int      @default(0)
+  coins     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
+}
