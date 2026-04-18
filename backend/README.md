@@ -1,58 +1,78 @@
-# SmartMap Backend 📍🎮
+# SmartMap Backend API 📍🚀
 
-SmartMap is a gamified map verification system where users submit real-world locations, verify them through community consensus, and earn points, coins, and reputation.
+SmartMap is a modular, AI-powered location verification and gamification platform built for the GDG Hackathon. This backend serves as the core monolithic layer, driving location discovery, RAG-based AI search, automated image verification, competitive gamification, missions, and geography-based quizzes.
 
-## 🚀 Teck Stack
-- **Runtime**: Node.js (Express)
+## 🏗 Tech Stack
+
+- **Runtime**: Node.js
+- **Framework**: Express.js
 - **Database**: PostgreSQL
-- **ORM**: Prisma (using Driver Adapters)
-- **Security**: JWT, Bcrypt, Helmet, Express Rate Limit
-- **Validation**: Joi
-- **Logging**: Morgan
+- **ORM**: Prisma 7 (using `@prisma/adapter-pg` driver adapters)
+- **AI Integrations**: Google Gemini 2.5 Flash SDK (`@google/genai`)
+- **Security**: JWT Auth, bcrypt, Helmet, Express Rate Limiter
+- **Media**: Local Multer instance for File Uploads
 
-## ✨ Core Features
-- **Modular Architecture**: Clean separation of Auth, Location, Verification, and Leaderboard.
-- **Gamification Engine**: Atomic reward system (Points/Coins) with a persistent Activity Log.
-- **Community Trust**: Automated verification based on community voting (UP/DOWN).
-- **Leaderboards**: Daily, Weekly, and All-time rankings optimized via DB aggregation.
-- **Production Ready**: Input validation, security headers, and brute-force protection.
+## 🚀 Quick Start Guide
 
-## 🛠 Installation & Setup
-1. **Clone the repository.**
-2. **Install dependencies**: `npm install`
-3. **Configure Environment**: Create a `.env` file from the sample.
-4. **Database Init**:
-   ```bash
-   npx prisma generate
-   npx prisma db push
-   ```
-5. **Run**: `npm run dev`
+### 1. Prerequisites
+- Node.js (v18+)
+- PostgreSQL installed and running locally (or providing a cloud URI).
+- A valid Google Gemini API Key.
 
-## 📡 API Endpoints
+### 2. Environment Variables (.env)
+Create a `.env` file in the root folder with the following structure:
+```env
+# Database connection string
+DATABASE_URL="postgresql://postgres:password@localhost:5432/smartmap?schema=public"
 
-### 🔐 Authentication
-- `POST /api/auth/register` - Create a new account (+20 Points, +10 Coins).
-- `POST /api/auth/login` - Authenticate and receive a JWT.
+# JWT Secret for Auth sessions
+JWT_SECRET="YOUR_SUPER_SECRET_KEY"
 
-### 📍 Locations
-- `POST /api/locations` - Submit a location for verification (Auth required).
-- `GET /api/locations` - List all locations (Filter by category/status).
-- `GET /api/locations/:id` - Detailed view of a specific location.
+# Server Port
+PORT=5000
 
-### 🗳 Verifications
-- `POST /api/verifications` - Vote UP or DOWN on a location. 
-  - Voter gets +5 Points.
-  - Creator gets +0.1 Reputation on UP votes.
+# Google Gemini API Key
+GEMINI_API_KEY="AIzaSyYourKeyHere..."
+```
 
-### 🏆 Leaderboard
-- `GET /api/leaderboard?timeframe=daily` - Top users for the day.
-- `GET /api/leaderboard?timeframe=weekly` - Top users for the week.
-
-## 🧪 Testing
-Check your database connection effortlessly:
+### 3. Installation & Database Sync
 ```bash
+# 1. Install all dependencies
+npm install
+
+# 2. Push schema to database and generate Prisma Client
+npx prisma generate
+npx prisma db push
+
+# 3. Test Database Connection
 npx tsx db-test.ts
 ```
 
-## 📜 License
-ISC
+### 4. Running the Server
+```bash
+# Development Mode (hot-reloading via Nodemon)
+npm run dev
+
+# Production Mode
+npm start
+```
+*The server will be live on `http://localhost:5000`*
+
+## 📚 Project Architecture
+This backend utilizes a highly robust **Modular Monolith** pattern.
+All logic is isolated contextually within `src/modules/*`:
+- `auth/` — JWT Registration & Profile fetching
+- `location/` — Core POI storage and interactions
+- `verification/` — Human up/down voting logic (+ reputation systems)
+- `leaderboard/` — Ranking algorithms via Prisma aggregation
+- `gamification/` — Atomic transaction rewards (Points / Coins)
+- `mission/` — Tiered objectives and completion tracking
+- `quiz/` — Trivia questions scoped to target locations
+- `navigation/` — Coordinate resolution and routing saves
+- `upload/` — Local Multi-part image hosting
+- `search/` — Contextual AI querying via RAG using Gemini
+- `ai_verification/` — Automated image moderations through local Buffer Base64 decoding into Gemini Vision.
+
+## 📖 Explore the Docs
+- To view the detailed framework design rules, see [DOCUMENTATION.md](./DOCUMENTATION.md)
+- For exhaustive Postman/cURL integration tests of ALL endpoints, see [API_DOCUMENTATION.md](./API_DOCUMENTATION.md)

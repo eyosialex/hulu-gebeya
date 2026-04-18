@@ -1,12 +1,34 @@
 const leaderboardService = require('./leaderboard.service');
 
-const getLeaderboard = async (req, res, next) => {
+const getLifetime = async (req, res, next) => {
   try {
-    const { timeframe } = req.query; // daily, weekly, lifetime
-    const leaderboard = await leaderboardService.getLeaderboard(timeframe);
-    
+    const leaderboard = await leaderboardService.getLeaderboard('lifetime');
     res.json({
-      timeframe: timeframe || 'lifetime',
+      timeframe: 'lifetime',
+      leaderboard
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getDaily = async (req, res, next) => {
+  try {
+    const leaderboard = await leaderboardService.getLeaderboard('daily');
+    res.json({
+      timeframe: 'daily',
+      leaderboard
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getWeekly = async (req, res, next) => {
+  try {
+    const leaderboard = await leaderboardService.getLeaderboard('weekly');
+    res.json({
+      timeframe: 'weekly',
       leaderboard
     });
   } catch (error) {
@@ -15,5 +37,7 @@ const getLeaderboard = async (req, res, next) => {
 };
 
 module.exports = {
-  getLeaderboard
+  getLifetime,
+  getDaily,
+  getWeekly
 };

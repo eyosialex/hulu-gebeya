@@ -42,6 +42,11 @@ model User {
   locations       Location[]
   verifications   Verification[]
   activityLogs    ActivityLog[]
+  missionsCreated Mission[]      
+  missionsTaken   UserMission[] 
+  quizzesCreated  Quiz[]
+  quizzesTaken    UserQuiz[]
+  savedRoutes     SavedRoute[]
 }
 
 model Location {
@@ -55,11 +60,13 @@ model Location {
   verificationScore Float    @default(0)
   status            LocationStatus @default(PENDING)
   createdAt         DateTime @default(now())
+  updatedAt         DateTime? @updatedAt
 
   createdBy   User   @relation(fields: [createdById], references: [id])
   createdById String
 
   verifications Verification[]
+  quizzes       Quiz[]
 }
 
 model Verification {
@@ -87,4 +94,89 @@ model ActivityLog {
 
   user   User   @relation(fields: [userId], references: [id])
   userId String
+}
+
+model BlacklistedToken {
+  token     String   @id
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+enum MissionStatus {
+  ACTIVE
+  COMPLETED
+}
+
+model Mission {
+  id          String   @id @default(uuid())
+  title       String
+  description String
+  points      Int      @default(0)
+  coins       Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  createdBy   User     @relation(fields: [createdById], references: [id])
+  createdById String
+
+  userMissions UserMission[]
+}
+
+model UserMission {
+  id          String        @id @default(uuid())
+  status      MissionStatus @default(ACTIVE)
+  startedAt   DateTime      @default(now())
+  completedAt DateTime?
+
+  user        User    @relation(fields: [userId], references: [id])
+  userId      String
+
+  mission     Mission @relation(fields: [missionId], references: [id])
+  missionId   String
+
+  @@unique([userId, missionId])
+}
+
+model Quiz {
+  id            String   @id @default(uuid())
+  question      String
+  correctAnswer String
+  points        Int      @default(0)
+  coins         Int      @default(0)
+  createdAt     DateTime @default(now())
+
+  location      Location @relation(fields: [locationId], references: [id])
+  locationId    String
+
+  createdBy     User     @relation(fields: [createdById], references: [id])
+  createdById   String
+
+  userQuizzes   UserQuiz[]
+}
+
+model UserQuiz {
+  id          String   @id @default(uuid())
+  isCorrect   Boolean
+  attemptedAt DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id])
+  userId      String
+
+  quiz        Quiz     @relation(fields: [quizId], references: [id])
+  quizId      String
+
+  @@unique([userId, quizId])
+}
+
+model SavedRoute {
+  id             String   @id @default(uuid())
+  name           String
+  originLat      Float
+  originLng      Float
+  destinationLat Float
+  destinationLng Float
+  waypoints      Json?    // Optional array of intermediate coordinates
+  createdAt      DateTime @default(now())
+
+  user           User     @relation(fields: [userId], references: [id])
+  userId         String
 }

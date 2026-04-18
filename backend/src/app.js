@@ -8,19 +8,30 @@ const authRoutes = require('./modules/auth/auth.routes');
 const locationRoutes = require('./modules/location/location.routes');
 const verificationRoutes = require('./modules/verification/verification.routes');
 const leaderboardRoutes = require('./modules/leaderboard/leaderboard.routes');
+const gamificationRoutes = require('./modules/gamification/gamification.routes');
+const missionRoutes = require('./modules/mission/mission.routes');
+const quizRoutes = require('./modules/quiz/quiz.routes');
+const navigationRoutes = require('./modules/navigation/navigation.routes');
+const uploadRoutes = require('./modules/upload/upload.routes');
+const searchRoutes = require('./modules/search/search.routes');
+const aiVerificationRoutes = require('./modules/ai_verification/ai_verification.routes');
+const path = require('path');
 
 const app = express();
 
 // Security Middlewares
-app.use(helmet());
+app.use(helmet({ crossOriginResourcePolicy: false })); // allows serving static images safely
 app.use(cors());
 app.use(morgan('dev'));
 app.use(express.json());
 
+// Serve static files (uploads)
+app.use('/uploads', express.static(path.join(__dirname, '../public/uploads')));
+
 // Rate Limiting
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
+  windowMs: 15 * 60 * 1000, 
+  max: 100, 
   message: 'Too many requests from this IP, please try again after 15 minutes'
 });
 app.use('/api/', limiter);
@@ -31,8 +42,16 @@ app.get('/', (req, res) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api/locations', locationRoutes);
-app.use('/api/verifications', verificationRoutes);
+app.use('/api/locations', verificationRoutes);
 app.use('/api/leaderboard', leaderboardRoutes);
+app.use('/api/gamification', gamificationRoutes);
+app.use('/api/missions', missionRoutes);
+app.use('/api/quizzes', quizRoutes);
+app.use('/api/navigation', navigationRoutes);
+app.use('/api/upload', uploadRoutes);
+app.use('/api/search', searchRoutes);
+app.use('/api', aiVerificationRoutes);
+
 
 // Global Error Handler
 app.use((err, req, res, next) => {

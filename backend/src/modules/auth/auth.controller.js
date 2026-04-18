@@ -1,6 +1,6 @@
 const authService = require('./auth.service');
 
-const register = async (req, res) => {
+const register = async (req, res, next) => {
   try {
     const user = await authService.registerUser(req.body);
 
@@ -9,11 +9,11 @@ const register = async (req, res) => {
       user
     });
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    next(error);
   }
 };
 
-const login = async (req, res) => {
+const login = async (req, res, next) => {
   try {
     const result = await authService.loginUser(req.body);
 
@@ -22,11 +22,32 @@ const login = async (req, res) => {
       ...result
     });
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    next(error);
+  }
+};
+
+const getMe = async (req, res, next) => {
+  try {
+    const user = await authService.getMe(req.user.userId);
+    res.json(user);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const logout = async (req, res, next) => {
+  try {
+    const token = req.headers.authorization.split(' ')[1];
+    await authService.logoutUser(token);
+    res.json({ message: 'Logged out successfully' });
+  } catch (error) {
+    next(error);
   }
 };
 
 module.exports = {
   register,
-  login
+  login,
+  getMe,
+  logout
 };

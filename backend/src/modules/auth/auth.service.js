@@ -45,7 +45,7 @@ const loginUser = async (data) => {
   }
 
   const token = jwt.sign(
-    { userId: user.id },
+    { userId: user.id, role: user.role },
     process.env.JWT_SECRET,
     { expiresIn: '7d' }
   );
@@ -54,7 +54,52 @@ const loginUser = async (data) => {
   return { user: userWithoutPassword, token };
 };
 
+const getMe = async (userId) => {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      points: true,
+      coins: true,
+      reputationScore: true,
+      createdAt: true
+    }
+  });
+
+  if (!user) {
+    throw new Error('User not found');
+  }
+
+  return user;
+};
+
+const logoutUser = async (token) => {
+  // Decode (without verifying again) to get the expiry time
+  const decoded = jwt.decode(token);
+  const expiresAt = new Date(decoded.exp * 1000);
+
+  await prisma.blacklistedToken.create({
+    data: {
+      token,
+      expiresAt
+    }
+  });
+};
+
+const isTokenBlacklisted = async (token) => {
+  const entry = await prisma.blacklistedToken.findUnique({
+    where: { token }
+  });
+  return !!entry;
+};
+
 module.exports = {
   registerUser,
-  loginUser
+  loginUser,
+  getMe,
+  logoutUser,
+  isTokenBlacklisted
 };

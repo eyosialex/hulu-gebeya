@@ -38,8 +38,53 @@ const getLocationById = async (req, res, next) => {
   }
 };
 
+const getNearbyLocations = async (req, res, next) => {
+  try {
+    const lat = parseFloat(req.query.lat);
+    const lng = parseFloat(req.query.lng);
+    const radius = parseFloat(req.query.radius) || 5;
+
+    const locations = await locationService.getNearbyLocations(lat, lng, radius);
+    res.json(locations);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const updateLocation = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.userId;
+    const userRole = req.user.role;
+
+    const location = await locationService.updateLocation(id, req.body, userId, userRole);
+    res.json({
+      message: 'Location updated successfully',
+      location
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const deleteLocation = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.userId;
+    const userRole = req.user.role;
+
+    const result = await locationService.deleteLocation(id, userId, userRole);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   createLocation,
   getAllLocations,
-  getLocationById
+  getLocationById,
+  getNearbyLocations,
+  updateLocation,
+  deleteLocation
 };

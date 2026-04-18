@@ -1,4 +1,5 @@
 const prisma = require('../../prisma/client');
+const gamificationService = require('../gamification/gamification.service');
 
 const submitVerification = async (data, userId) => {
   const { locationId, vote, confidence } = data;
@@ -42,14 +43,8 @@ const submitVerification = async (data, userId) => {
       }
     });
 
-    // 4. Reward the Voter (Only for new verifications would be ideal, but here we reward for interaction)
-    await tx.user.update({
-      where: { id: userId },
-      data: {
-        points: { increment: 5 },
-        coins: { increment: 2 }
-      }
-    });
+    // 4. Reward the Voter via Gamification Module
+    await gamificationService.rewardUser(tx, userId, 'LOCATION_VERIFIED', `Verified location: ${updatedLocation.name} with a ${vote} vote`, 5, 2);
 
     // 5. Update Creator Reputation (If location is being upvoted)
     if (vote === 'UP') {
@@ -59,21 +54,31 @@ const submitVerification = async (data, userId) => {
       });
     }
 
-    // 6. Log Activity
-    await tx.activityLog.create({
-      data: {
-        userId,
-        action: 'LOCATION_VERIFIED',
-        details: `Verified location: ${updatedLocation.name} with a ${vote} vote`,
-        points: 5,
-        coins: 2
-      }
-    });
+
 
     return verification;
   });
 };
 
+const getVerificationsByLocation = async (locationId) => {
+  return await prisma.verification.findMany({
+    where: { locationId },
+    include: {
+      user: {
+        select: {
+          id: true,
+          name: true,
+          reputationScore: true
+        }
+      }
+    },
+    orderBy: {
+      createdAt: 'desc'
+    }
+  });
+};
+
 module.exports = {
-  submitVerification
+  submitVerification,
+  getVerificationsByLocation
 };
