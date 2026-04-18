@@ -1,4 +1,0 @@
-const tsrStartManifest = () => ({ routes: { __root__: { filePath: "/home/anon/Documents/Smart_map/frontend/src/routes/__root.tsx", children: ["/", "/signin", "/signup"], assets: void 0, preloads: ["/assets/index-GKduHuLB.js"] }, "/": { filePath: "/home/anon/Documents/Smart_map/frontend/src/routes/index.tsx", children: void 0, assets: void 0, preloads: ["/assets/index-Wfezenzr.js", "/assets/button-GoVMJEm4.js"] }, "/signin": { filePath: "/home/anon/Documents/Smart_map/frontend/src/routes/signin.tsx", children: void 0, assets: void 0, preloads: ["/assets/signin-CJ9Oyd43.js", "/assets/button-GoVMJEm4.js", "/assets/auth-shell-C6DjSgC7.js"] }, "/signup": { filePath: "/home/anon/Documents/Smart_map/frontend/src/routes/signup.tsx", children: void 0, assets: void 0, preloads: ["/assets/signup-D21G2yZp.js", "/assets/button-GoVMJEm4.js", "/assets/auth-shell-C6DjSgC7.js"] } }, clientEntry: "/assets/index-GKduHuLB.js" });
-export {
-  tsrStartManifest
-};

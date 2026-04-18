@@ -14,7 +14,7 @@ export const Route = createFileRoute("/signin")({
   component: SignInPage,
 });
 
-function SignInPage() {
+export function SignInPage() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -30,7 +30,7 @@ function SignInPage() {
       return setError("Please enter a valid email address.");
     setError("");
     // UI-only demo
-    navigate({ to: "/" });
+    navigate({ to: "/dashboard" });
   };
 
   return (

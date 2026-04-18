@@ -6,7 +6,6 @@ import {
   Scripts,
   useRouterState,
 } from "@tanstack/react-router";
-import { AnimatePresence, motion } from "framer-motion";
 import * as React from "react";
 
 import appCss from "../styles.css?url";
@@ -40,14 +39,14 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "Smart Map" },
+      { name: "description", content: "Smart Map urban exploration platform" },
+      { name: "author", content: "Smart Map" },
+      { property: "og:title", content: "Smart Map" },
+      { property: "og:description", content: "Smart Map urban exploration platform" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-      { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:site", content: "@SmartMap" },
     ],
     links: [
       {
@@ -76,54 +75,9 @@ function RootShell({ children }: { children: React.ReactNode }) {
 }
 
 function RootComponent() {
-  const authRoutes = new Set(["/signin", "/signup"]);
-  const pathname = useRouterState({
-    select: (state) => state.location.pathname,
-  });
-  const previousPathnameRef = React.useRef(pathname);
-  const previousPathname = previousPathnameRef.current;
-
-  React.useEffect(() => {
-    previousPathnameRef.current = pathname;
-  }, [pathname]);
-
-  const isAuthRoute = authRoutes.has(pathname);
-  const wasAuthRoute = authRoutes.has(previousPathname);
-  const shouldFlip =
-    isAuthRoute && wasAuthRoute && pathname !== previousPathname;
-  const direction =
-    previousPathname === "/signin" && pathname === "/signup"
-      ? 1
-      : previousPathname === "/signup" && pathname === "/signin"
-        ? -1
-        : 1;
-
   return (
-    <div style={shouldFlip ? { perspective: "1400px" } : undefined}>
-      <AnimatePresence mode="wait" initial={false}>
-        <motion.div
-          key={pathname}
-          initial={
-            shouldFlip
-              ? { opacity: 0, rotateY: direction * 90, scale: 0.98 }
-              : { opacity: 0, y: 12 }
-          }
-          animate={
-            shouldFlip
-              ? { opacity: 1, rotateY: 0, scale: 1 }
-              : { opacity: 1, y: 0 }
-          }
-          exit={
-            shouldFlip
-              ? { opacity: 0, rotateY: direction * -90, scale: 0.98 }
-              : { opacity: 0, y: -12 }
-          }
-          transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-          style={{ transformStyle: "preserve-3d" }}
-        >
-          <Outlet />
-        </motion.div>
-      </AnimatePresence>
+    <div>
+      <Outlet />
     </div>
   );
 }

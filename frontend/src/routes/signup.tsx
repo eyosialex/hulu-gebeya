@@ -46,7 +46,7 @@ function SignUpPage() {
 
     setError("");
     // UI-only demo
-    navigate({ to: "/" });
+    navigate({ to: "/dashboard" });
   };
 
   return (
