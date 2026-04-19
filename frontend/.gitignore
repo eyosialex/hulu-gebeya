@@ -1,0 +1,34 @@
+.DS_Store
+node_modules/
+dist/
+build/
+.cache/
+.vite/
+out/
+coverage/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDEs
+.vscode/
+.idea/
+*.iml
+
+# TypeScript
+*.tsbuildinfo
+
+# Misc
+.parcel-cache/
+.next/
+.sass-cache/
+.cache-loader/
+public/build/
+.eslintcache
