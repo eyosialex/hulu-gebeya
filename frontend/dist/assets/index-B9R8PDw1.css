@@ -1,0 +1,1 @@
+@tailwind base;@tailwind components;@tailwind utilities;@layer utilities{.mask-gradient{background:radial-gradient(70.71% 70.71% at 50% 50%,#0000 20%,#000 80%)}}

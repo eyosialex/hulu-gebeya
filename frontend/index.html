@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Map | Explore, Play, Earn</title>
+    <!-- Assuming Tailwind is bundled here eventually via build process -->
+    <link href="/shared/styles/tailwind.css" rel="stylesheet">
+    <style>
+        /* Base landing page styling simulating Tailwind utility classes */
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #F3FCEF; margin: 0; }
+        .hero-container { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; text-align: center; }
+        .title { font-size: 4rem; font-weight: 800; color: #006E2F; margin-bottom: 0.5rem; letter-spacing: -1px; }
+        .tagline { font-size: 1.5rem; color: #161D16; margin-bottom: 2rem; font-weight: 600; }
+        .cta-container { display: flex; gap: 1rem; }
+        .btn-primary { background: linear-gradient(135deg, #006E2F 0%, #22C55E 100%); color: white; padding: 1rem 2rem; border-radius: 9999px; text-decoration: none; font-weight: bold; border: none; cursor: pointer; box-shadow: 0 10px 25px rgba(0,110,47,0.3); transition: transform 0.2s; }
+        .btn-secondary { background: white; color: #006E2F; padding: 1rem 2rem; border-radius: 9999px; text-decoration: none; font-weight: bold; border: 2px solid rgba(0,110,47,0.2); cursor: pointer; transition: background 0.2s; }
+        .features-grid { display: flex; gap: 2rem; margin-top: 4rem; }
+        .feature-card { background: white; padding: 1.5rem; border-radius: 16px; width: 200px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .feature-card h3 { color: #0058BE; margin-top: 0; }
+        .feature-card p { font-size: 0.9rem; color: #52525B; }
+    </style>
+</head>
+<body>
+    <div class="hero-container">
+        <h1 class="title">Smart Map</h1>
+        <p class="tagline">Explore your world. Play to uncover hidden gems. Earn real rewards.</p>
+        
+        <div class="cta-container">
+            <a href="/map" class="btn-primary">Start Exploring</a>
+            <a href="/login" class="btn-secondary">Login / Register</a>
+        </div>
+
+        <div class="features-grid">
+            <div class="feature-card">
+                <h3>Interactive Map</h3>
+                <p>Filter places easily & navigate step-by-step.</p>
+            </div>
+            <div class="feature-card">
+                <h3>Gamification</h3>
+                <p>Complete robot missions or photo quizzes for points.</p>
+            </div>
+            <div class="feature-card">
+                <h3>Earn Rewards</h3>
+                <p>Dominate the leaderboard and claim your prizes!</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

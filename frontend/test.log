@@ -1,0 +1,14 @@
+[h3] "toNodeHandler" export from h3 is deprecated. Please import "toNodeHandler" from "h3/node".
+file:///home/anon/Documents/frontend/node_modules/srvx/dist/adapters/node.mjs:720
+	if (handler.__nodeHandler) return handler.__nodeHandler;
+	            ^
+
+TypeError: Cannot read properties of undefined (reading '__nodeHandler')
+    at toNodeHandler (file:///home/anon/Documents/frontend/node_modules/srvx/dist/adapters/node.mjs:720:14)
+    at toNodeHandler (file:///home/anon/Documents/frontend/node_modules/h3-v2/dist/h3-Bz4OPZv_.mjs:2715:6)
+    at file:///home/anon/Documents/frontend/api/index.mjs:4:16
+    at ModuleJob.run (node:internal/modules/esm/module_job:430:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:661:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+
+Node.js v24.14.0
