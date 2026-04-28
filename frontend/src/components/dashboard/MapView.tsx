@@ -13,6 +13,7 @@ import { useGeolocation } from "@/hooks/useGeolocation";
 import { useNearbyLocations } from "@/hooks/useNearbyLocations";
 import { useSearch } from "@/hooks/useSearch";
 import { useRoute, useSaveRoute } from "@/hooks/useRoute";
+import { useRobotPhysics } from "@/hooks/useRobotPhysics";
 import { AnimatePresence } from "framer-motion";
 
 type NearbyPlace = {
@@ -140,65 +141,17 @@ export function MapView() {
   const [aiAnswer, setAiAnswer] = useState<string | null>(null);
   const [isAddMode, setIsAddMode] = useState(false);
   const [addCoords, setAddCoords] = useState<{ lat: number; lng: number } | null>(null);
-
   const [isSimulator, setIsSimulator] = useState(false);
-  const [anchorPos, setAnchorPos] = useState<{ lat: number; lng: number } | null>(null);
-  const [offsetMeters, setOffsetMeters] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
 
-  // Physics Constants for Metric Projection
-  const METERS_PER_DEGREE_LAT = 111320;
-  const STEP_SIZE_METERS = 5; // 5 meters per step for robot speed
-
-  const effectivePos = useMemo(() => {
-    // 1. Truth Layer: If simulator is off, follow real GPS
-    if (!isSimulator || !lat || !lng) {
-      return { lat, lng };
-    }
-
-    // 2. Projection Layer: If simulator is on, calculate from session-locked anchor
-    const anchor = anchorPos || { lat, lng };
-    const latRad = (anchor.lat * Math.PI) / 180;
-    
-    // Cosine correction for longitude degrees
-    const metersPerDegreeLng = METERS_PER_DEGREE_LAT * Math.cos(latRad);
-
-    return {
-      lat: anchor.lat + (offsetMeters.y / METERS_PER_DEGREE_LAT),
-      lng: anchor.lng + (offsetMeters.x / metersPerDegreeLng),
-    };
-  }, [isSimulator, lat, lng, anchorPos, offsetMeters]);
-
-  // Keyboard Physics Engine (WASD)
-  useEffect(() => {
-    if (!isSimulator) return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const key = e.key.toLowerCase();
-      setOffsetMeters(prev => {
-        const next = { ...prev };
-        if (key === 'w' || key === 'arrowup') next.y += STEP_SIZE_METERS;
-        if (key === 's' || key === 'arrowdown') next.y -= STEP_SIZE_METERS;
-        if (key === 'a' || key === 'arrowleft') next.x -= STEP_SIZE_METERS;
-        if (key === 'd' || key === 'arrowright') next.x += STEP_SIZE_METERS;
-        return next;
-      });
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isSimulator]);
+  const effectivePos = useRobotPhysics(lat, lng, isSimulator);
 
   // Mode Toggle Controller
   const toggleSimulator = () => {
     if (!isSimulator) {
-      // Lock current GPS as the simulation anchor
-      if (lat && lng) setAnchorPos({ lat, lng });
       setIsSimulator(true);
       setFollow(true); // Auto-focus on robot
     } else {
       setIsSimulator(false);
-      setAnchorPos(null);
-      setOffsetMeters({ x: 0, y: 0 });
     }
   };
 

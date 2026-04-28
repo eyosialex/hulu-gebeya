@@ -95,7 +95,11 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       value={{ 
         activeCategory, 
         openCategory, 
-        user: data.user, 
+        user: {
+          ...data.user,
+          initials: data.user.initials || data.user.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2),
+          rank: data.user.rank || (data.user.points > 1000 ? "Gold" : "Bronze")
+        }, 
         recentActivity: data.recentActivity || [], 
         isLoading, 
         logout 
