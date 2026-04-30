@@ -4,8 +4,7 @@ const uploadImage = async (req, res, next) => {
       return res.status(400).json({ error: 'No image file provided' });
     }
 
-    // Construct the public accessibility URL
-    const imageUrl = `/uploads/${req.file.filename}`;
+    const imageUrl = req.file.path; // Cloudinary secure URL
 
     res.status(201).json({
       message: 'Image uploaded successfully',

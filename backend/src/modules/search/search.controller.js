@@ -11,11 +11,7 @@ const search = async (req, res, next) => {
     // Default to search without geofencing if coords are missing, 
     // though service is now optimized for their presence.
     const result = await searchService.ragSearch(query, userLat, userLng);
-
-    res.json({
-      query,
-      result
-    });
+    res.json(result);
   } catch (error) {
     next(error);
   }

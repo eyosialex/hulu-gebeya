@@ -64,14 +64,41 @@ const runAiVerification = async (locationId, userId, userLat, userLng, verificat
     evaluation.errors.push('Benchmark image missing. Verification will rely on GPS and context.');
   }
 
-  // --- DUMMY AI VISION ENGINE (HACKATHON MOCK) ---
-  let aiData = { 
-    valid: evaluation.passed, 
-    confidence: 0.98, 
-    reasoning: evaluation.passed 
-      ? "Heuristic match: GPS telemetry and visual metadata align with target boundaries." 
-      : "Visual mismatch: User telemetry outside of acceptable target radius."
-  };
+  // --- REAL AI VISION ENGINE (ML ENGINE INTEGRATION) ---
+  let aiData;
+  try {
+    // Map Prisma fields to ML Engine format
+    const mlPayload = {
+      id: location.id,
+      name: location.name,
+      category: location.category,
+      image_url: location.imageUrl,
+      lat: location.latitude,
+      lng: location.longitude,
+      rating: location.rating || 0
+    };
+
+    const mlResponse = await fetch('http://localhost:5001/verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(mlPayload)
+    });
+    
+    if (!mlResponse.ok) {
+      throw new Error('ML Engine unreachable or error');
+    }
+    
+    aiData = await mlResponse.json();
+  } catch (err) {
+    console.warn('ML Engine Connection Failed. Using GPS fallback.');
+    aiData = { 
+      valid: evaluation.passed, 
+      confidence: 0.7, 
+      reasoning: evaluation.passed 
+        ? "Heuristic match: GPS telemetry aligns with target boundaries. (ML Engine Offline)" 
+        : "Visual mismatch: User telemetry outside of acceptable target radius."
+    };
+  }
 
   // Skip Gemini call entirely as per user request to simplify development flow
   /*

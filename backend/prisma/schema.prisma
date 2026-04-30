@@ -1,8 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider        = "prisma-client-js"
   previewFeatures = ["driverAdapters"]
@@ -10,6 +5,191 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+model User {
+  id              String          @id @default(uuid())
+  name            String
+  email           String          @unique
+  password        String
+  reputationScore Float           @default(0)
+  points          Int             @default(0)
+  coins           Int             @default(0)
+  role            Role            @default(USER)
+  createdAt       DateTime        @default(now())
+  streakCount     Int             @default(0)
+  lastActiveAt    DateTime        @default(now())
+  city            String?
+  bio             String?
+  activityLogs    ActivityLog[]
+  followedBy      Friendship[]    @relation("UserFollowedBy")
+  friends         Friendship[]    @relation("UserFriends")
+  locations       Location[]
+  missionsCreated Mission[]
+  quizzesCreated  Quiz[]
+  savedRoutes     SavedRoute[]
+  inventory       UserInventory[]
+  missionsTaken   UserMission[]
+  quizzesTaken    UserQuiz[]
+  verifications   Verification[]
+}
+
+model Location {
+  id                String         @id @default(uuid())
+  name              String
+  description       String?
+  category          String
+  latitude          Float
+  longitude         Float
+  imageUrl          String?
+  verificationScore Float          @default(0)
+  status            LocationStatus @default(PENDING)
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime?      @updatedAt
+  tags              String[]       @default([])
+  createdById       String
+  createdBy         User           @relation(fields: [createdById], references: [id])
+  missions          Mission[]
+  quizzes           Quiz[]
+  verifications     Verification[]
+
+  @@index([latitude, longitude])
+}
+
+model Verification {
+  id         String   @id @default(uuid())
+  vote       VoteType
+  confidence Float?
+  createdAt  DateTime @default(now())
+  userId     String
+  locationId String
+  latitude   Float?
+  longitude  Float?
+  location   Location @relation(fields: [locationId], references: [id])
+  user       User     @relation(fields: [userId], references: [id])
+
+  @@unique([userId, locationId])
+}
+
+model ActivityLog {
+  id        String   @id @default(uuid())
+  action    String
+  details   String?
+  points    Int      @default(0)
+  coins     Int      @default(0)
+  latitude  Float?
+  longitude Float?
+  createdAt DateTime @default(now())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model BlacklistedToken {
+  token     String   @id
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model Mission {
+  id           String        @id @default(uuid())
+  title        String
+  description  String
+  points       Int           @default(0)
+  coins        Int           @default(0)
+  locationId   String?
+  latitude     Float?
+  longitude    Float?
+  createdAt    DateTime      @default(now())
+  createdById  String
+  createdBy    User          @relation(fields: [createdById], references: [id])
+  location     Location?     @relation(fields: [locationId], references: [id])
+  userMissions UserMission[]
+}
+
+model UserMission {
+  id          String        @id @default(uuid())
+  status      MissionStatus @default(ACTIVE)
+  startedAt   DateTime      @default(now())
+  completedAt DateTime?
+  userId      String
+  missionId   String
+  mission     Mission       @relation(fields: [missionId], references: [id])
+  user        User          @relation(fields: [userId], references: [id])
+
+  @@unique([userId, missionId])
+}
+
+model Quiz {
+  id            String     @id @default(uuid())
+  question      String
+  correctAnswer String
+  points        Int        @default(0)
+  coins         Int        @default(0)
+  createdAt     DateTime   @default(now())
+  locationId    String
+  createdById   String
+  createdBy     User       @relation(fields: [createdById], references: [id])
+  location      Location   @relation(fields: [locationId], references: [id])
+  userQuizzes   UserQuiz[]
+}
+
+model UserQuiz {
+  id          String   @id @default(uuid())
+  isCorrect   Boolean
+  attemptedAt DateTime @default(now())
+  timeTaken   Int?
+  userId      String
+  quizId      String
+  quiz        Quiz     @relation(fields: [quizId], references: [id])
+  user        User     @relation(fields: [userId], references: [id])
+
+  @@unique([userId, quizId])
+}
+
+model SavedRoute {
+  id             String   @id @default(uuid())
+  name           String
+  originLat      Float
+  originLng      Float
+  destinationLat Float
+  destinationLng Float
+  waypoints      Json?
+  createdAt      DateTime @default(now())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id])
+}
+
+model Friendship {
+  id        String   @id @default(uuid())
+  userId    String
+  friendId  String
+  createdAt DateTime @default(now())
+  friend    User     @relation("UserFollowedBy", fields: [friendId], references: [id])
+  user      User     @relation("UserFriends", fields: [userId], references: [id])
+
+  @@unique([userId, friendId])
+}
+
+model ShopItem {
+  id          String          @id @default(uuid())
+  name        String
+  description String
+  price       Int
+  type        String
+  tint        String?
+  detail      String?
+  inventory   UserInventory[]
+}
+
+model UserInventory {
+  id        String    @id @default(uuid())
+  userId    String
+  itemId    String
+  expiresAt DateTime?
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  item      ShopItem  @relation(fields: [itemId], references: [id])
+  user      User      @relation(fields: [userId], references: [id])
 }
 
 enum Role {
@@ -28,222 +208,8 @@ enum VoteType {
   DOWN
 }
 
-model User {
-  id              String   @id @default(uuid())
-  name            String
-  email           String   @unique
-  password        String
-  reputationScore Float    @default(0)
-  points          Int      @default(0)
-  coins           Int      @default(0)
-  role            Role     @default(USER)
-  createdAt       DateTime @default(now())
-  
-  // New properties for Phase 3 Alignment
-  streakCount     Int      @default(0)
-  lastActiveAt    DateTime @default(now())
-  city            String?
-  bio             String?
-
-  locations       Location[]
-  verifications   Verification[]
-  activityLogs    ActivityLog[]
-  missionsCreated Mission[]      
-  missionsTaken   UserMission[] 
-  quizzesCreated  Quiz[]
-  quizzesTaken    UserQuiz[]
-  savedRoutes     SavedRoute[]
-  
-  inventory       UserInventory[]
-  friends         Friendship[] @relation("UserFriends")
-  followedBy      Friendship[] @relation("UserFollowedBy")
-}
-
-model Location {
-  id                String   @id @default(uuid())
-  name              String
-  description       String?
-  category          String
-  latitude          Float
-  longitude         Float
-  imageUrl          String?
-  verificationScore Float    @default(0)
-  status            LocationStatus @default(PENDING)
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime? @updatedAt
-
-  // New properties for Phase 3 Alignment
-  tags              String[] @default([])
-
-  createdBy   User   @relation(fields: [createdById], references: [id])
-  createdById String
-
-  verifications Verification[]
-  quizzes       Quiz[]
-  missions      Mission[]
-
-  @@index([latitude, longitude])
-}
-
-model Verification {
-  id         String   @id @default(uuid())
-  vote       VoteType
-  confidence Float?
-  latitude   Float?
-  longitude  Float?
-  createdAt  DateTime @default(now())
-
-  user   User     @relation(fields: [userId], references: [id])
-  userId String
-
-  location   Location @relation(fields: [locationId], references: [id])
-  locationId String
-
-  @@unique([userId, locationId])
-}
-
-model ActivityLog {
-  id        String   @id @default(uuid())
-  action    String   // e.g., "LOCATION_CREATED", "LOCATION_VERIFIED"
-  details   String?
-  points    Int      @default(0)
-  coins     Int      @default(0)
-  latitude  Float?   // Telemetry for anti-cheat
-  longitude Float?   // Telemetry for anti-cheat
-  createdAt DateTime @default(now())
-
-  user   User   @relation(fields: [userId], references: [id])
-  userId String
-}
-
-model BlacklistedToken {
-  token     String   @id
-  expiresAt DateTime
-  createdAt DateTime @default(now())
-}
-
 enum MissionStatus {
   ACTIVE
   COMPLETED
   SIMULATED_COMPLETED
-}
-
-model Mission {
-  id          String   @id @default(uuid())
-  title       String
-  description String
-  points      Int      @default(0)
-  coins       Int      @default(0)
-  
-  // Geographic link (optional, for location-based missions)
-  location    Location? @relation(fields: [locationId], references: [id])
-  locationId  String?
-  
-  // Fallback direct coordinates (if not tied to a specific Location entity)
-  latitude    Float?
-  longitude   Float?
-
-  createdAt   DateTime @default(now())
-
-  createdBy   User     @relation(fields: [createdById], references: [id])
-  createdById String
-
-  userMissions UserMission[]
-}
-
-model UserMission {
-  id          String        @id @default(uuid())
-  status      MissionStatus @default(ACTIVE)
-  startedAt   DateTime      @default(now())
-  completedAt DateTime?
-
-  user        User    @relation(fields: [userId], references: [id])
-  userId      String
-
-  mission     Mission @relation(fields: [missionId], references: [id])
-  missionId   String
-
-  @@unique([userId, missionId])
-}
-
-model Quiz {
-  id            String   @id @default(uuid())
-  question      String
-  correctAnswer String
-  points        Int      @default(0)
-  coins         Int      @default(0)
-  createdAt     DateTime @default(now())
-
-  location      Location @relation(fields: [locationId], references: [id])
-  locationId    String
-
-  createdBy     User     @relation(fields: [createdById], references: [id])
-  createdById   String
-
-  userQuizzes   UserQuiz[]
-}
-
-model UserQuiz {
-  id          String   @id @default(uuid())
-  isCorrect   Boolean
-  attemptedAt DateTime @default(now())
-  timeTaken   Int?     // Time in seconds for speed bonus calculation
-
-  user        User     @relation(fields: [userId], references: [id])
-  userId      String
-
-  quiz        Quiz     @relation(fields: [quizId], references: [id])
-  quizId      String
-
-  @@unique([userId, quizId])
-}
-
-model SavedRoute {
-  id             String   @id @default(uuid())
-  name           String
-  originLat      Float
-  originLng      Float
-  destinationLat Float
-  destinationLng Float
-  waypoints      Json?    // Optional array of intermediate coordinates
-  createdAt      DateTime @default(now())
-
-  user           User     @relation(fields: [userId], references: [id])
-  userId         String
-}
-
-model Friendship {
-  id          String   @id @default(uuid())
-  userId      String
-  friendId    String
-  createdAt   DateTime @default(now())
-
-  user        User     @relation("UserFriends", fields: [userId], references: [id])
-  friend      User     @relation("UserFollowedBy", fields: [friendId], references: [id])
-
-  @@unique([userId, friendId])
-}
-
-model ShopItem {
-  id          String   @id @default(uuid())
-  name        String
-  description String
-  price       Int
-  type        String
-  tint        String?
-  detail      String?
-  
-  inventory   UserInventory[]
-}
-
-model UserInventory {
-  id          String   @id @default(uuid())
-  userId      String
-  itemId      String
-  expiresAt   DateTime?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-
-  user        User     @relation(fields: [userId], references: [id])
-  item        ShopItem @relation(fields: [itemId], references: [id])
 }

@@ -16,6 +16,7 @@ const createLocation = async (data, userId) => {
         longitude: parseFloat(longitude),
         imageUrl,
         tags: tags || [],
+        rating: parseFloat(data.rating) || 0,
         createdById: userId
       }
     });
@@ -121,7 +122,7 @@ const getNearbyLocations = async (lat, lng, radiusKm) => {
   // Haversine formula via raw SQL for accurate distance calculation
   const locations = await prisma.$queryRawUnsafe(`
     SELECT id, name, description, category, latitude, longitude, "imageUrl",
-           "verificationScore", status, "createdAt",
+           "verificationScore", rating, status, "createdAt",
            ( 6371 * acos(
                cos(radians($1)) * cos(radians(latitude)) *
                cos(radians(longitude) - radians($2)) +

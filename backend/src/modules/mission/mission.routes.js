@@ -10,6 +10,10 @@ router.get('/', missionController.getAllMissions);
 
 // Expose the frontend "Mission Log" which actually maps verified locations
 router.get('/log', protect, missionController.getMissionLog);
+router.get('/recommend', protect, missionController.getRecommendedMission);
+router.get('/quiz/generate', protect, missionController.getQuiz);
+router.post('/quiz/submit', protect, missionController.submitQuizAnswer);
+router.get('/persona/chat', protect, missionController.getPersonaChat);
 
 // Only admins can create missions
 router.post('/', protect, requireRole('ADMIN'), validate(createMissionSchema), missionController.createMission);

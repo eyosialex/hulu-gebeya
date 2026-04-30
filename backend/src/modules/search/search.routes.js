@@ -3,6 +3,6 @@ const router = express.Router();
 const searchController = require('./search.controller');
 
 // Public route for semantic RAG search
-router.post('/rag', searchController.search);
+router.post('/', searchController.search);
 
 module.exports = router;
