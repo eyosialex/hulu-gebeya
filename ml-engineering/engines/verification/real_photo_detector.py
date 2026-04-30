@@ -36,7 +36,7 @@ from google.genai import types
 from dotenv import load_dotenv
 
 # --- Setup -------------------------------------------------------------------
-load_dotenv()
+load_dotenv(os.path.join(os.path.dirname(__file__), '../../../.env'))
 API_KEY = os.getenv("GEMINI_API_KEY")
 
 if API_KEY and API_KEY != "YOUR_GEMINI_API_KEY_HERE":

@@ -29,7 +29,7 @@ from utils.overpass import overpass_search
 from utils.utils import extract_category, clean_query, calculate_distance, DEFAULT_LAT, DEFAULT_LNG
 from engines.trust_engine import calculate_trust_score, get_realism_status
 
-load_dotenv()
+load_dotenv(os.path.join(os.path.dirname(__file__), '../../.env'))
 _client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
 

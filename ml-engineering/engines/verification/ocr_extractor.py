@@ -33,7 +33,7 @@ from google import genai
 from google.genai import types
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(os.path.join(os.path.dirname(__file__), '../../../.env'))
 _API_KEY = os.getenv("GEMINI_API_KEY")
 _HF_TOKEN = os.getenv("HF_API_TOKEN")
 
