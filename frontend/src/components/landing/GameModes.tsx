@@ -53,42 +53,8 @@ const modes: ModeData[] = [
 ];
 
 export function GameModes() {
-  const sectionRef = React.useRef<HTMLElement>(null);
-  const [demoFlip, setDemoFlip] = React.useState(false);
-  const hasPlayedRef = React.useRef(false);
-
-  React.useEffect(() => {
-    const section = sectionRef.current;
-
-    if (!section || hasPlayedRef.current) {
-      return;
-    }
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (!entry.isIntersecting || hasPlayedRef.current) {
-          return;
-        }
-
-        hasPlayedRef.current = true;
-        setDemoFlip(true);
-
-        window.setTimeout(() => {
-          setDemoFlip(false);
-        }, 900);
-
-        observer.disconnect();
-      },
-      { threshold: 0.45 },
-    );
-
-    observer.observe(section);
-
-    return () => observer.disconnect();
-  }, []);
-
   return (
-    <section ref={sectionRef} className="relative py-32 px-6">
+    <section className="relative py-32 px-6">
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-16">
           <p className="text-accent font-semibold uppercase tracking-widest text-sm mb-3">
@@ -112,7 +78,6 @@ export function GameModes() {
               height={400}
               frontContent={<ModeFront data={m} />}
               backContent={<ModeBack data={m} />}
-              flipped={demoFlip}
             />
           ))}
         </div>
@@ -167,7 +132,7 @@ function ModeFront({ data }: { data: ModeData }) {
       </div>
 
       <div className="relative flex items-center justify-between text-xs text-muted-foreground">
-        <span>Hover to reveal</span>
+        <span>Tap or hover to reveal</span>
         <ArrowRight className="w-4 h-4 animate-pulse" />
       </div>
     </div>
@@ -207,12 +172,15 @@ function ModeBack({ data }: { data: ModeData }) {
         </ul>
       </div>
 
-      <button
+      <a
+        href="/signin"
         className={`w-full h-12 rounded-xl font-semibold text-sm shadow-glow hover:opacity-95 transition-opacity inline-flex items-center justify-center gap-2 ${accentBtn}`}
+        aria-label={`Sign in to use ${data.title}`}
       >
-        {data.cta}
+        <span className="sr-only">Open</span>
+        <span>{data.cta}</span>
         <ArrowRight className="w-4 h-4" />
-      </button>
+      </a>
     </div>
   );
 }

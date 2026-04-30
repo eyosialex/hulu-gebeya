@@ -77,7 +77,7 @@ export function Categories() {
 
   return (
     <section
-      className="relative w-full overflow-hidden py-24"
+      className="relative w-full overflow-x-clip overflow-y-hidden py-24"
       onClickCapture={pauseAutoAdvance}
     >
       <div className="mx-auto mb-10 max-w-5xl px-4 text-center sm:px-6 lg:px-8">

@@ -74,19 +74,7 @@ const Card = ({
               </p>
             </div>
 
-            <div className="flex items-center gap-2 text-sm font-medium text-white/90">
-              <span>Learn more</span>
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <path d="M5 12h14M13 5l7 7-7 7" />
-              </svg>
-            </div>
+            {/* action removed per design: no 'Learn more' or arrow */}
           </div>
 
           {/* Right: visual */}

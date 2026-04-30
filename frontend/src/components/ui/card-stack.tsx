@@ -124,12 +124,15 @@ export function CardStack<T extends CardStackItem>({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active]);
 
-  const maxOffset = Math.max(0, Math.floor(maxVisible / 2));
-  const cardSpacing = Math.max(
+  // On small viewports, reduce number of visible cards and spacing to avoid horizontal overflow
+  const dynamicMaxVisible = viewportWidth < 640 ? Math.min(maxVisible, 3) : maxVisible;
+  const dynamicMaxOffset = Math.max(0, Math.floor(dynamicMaxVisible / 2));
+  const spacingMultiplier = viewportWidth < 640 ? 0.72 : 1;
+  const dynamicCardSpacing = Math.max(
     10,
-    Math.round(responsiveCardWidth * (1 - overlap)),
+    Math.round(responsiveCardWidth * (1 - overlap) * spacingMultiplier),
   );
-  const stepDeg = maxOffset > 0 ? spreadDeg / maxOffset : 0;
+  const stepDeg = dynamicMaxOffset > 0 ? spreadDeg / dynamicMaxOffset : 0;
 
   const canGoPrev = loop || active > 0;
   const canGoNext = loop || active < len - 1;
@@ -177,27 +180,34 @@ export function CardStack<T extends CardStackItem>({
   return (
     <div
       className={cn("w-full overflow-hidden", className)}
+      style={{ overscrollBehaviorX: "none", touchAction: "pan-y" }}
       onMouseEnter={() => setHovering(true)}
       onMouseLeave={() => setHovering(false)}
     >
       <div
         className="relative mx-auto w-full"
-        style={{ height: Math.max(320, responsiveCardHeight + 92) }}
+        style={{
+          height: Math.max(320, responsiveCardHeight + 92),
+          maxWidth: "100vw",
+        }}
       >
         <div
           className="absolute inset-0 flex items-end justify-center overflow-hidden bg-transparent"
-          style={{ perspective: `${perspectivePx}px` }}
+          style={{
+            perspective: `${perspectivePx}px`,
+            maxWidth: "100vw",
+          }}
         >
           <AnimatePresence initial={false}>
             {items.map((item, index) => {
               const offset = signedOffset(index, active, len, loop);
               const abs = Math.abs(offset);
-              const visible = abs <= maxOffset;
+              const visible = abs <= dynamicMaxOffset;
 
               if (!visible) return null;
 
               const rotateZ = offset * stepDeg;
-              const x = offset * cardSpacing;
+              const x = offset * dynamicCardSpacing;
               const y = abs * 10;
               const z = -abs * depthPx;
 

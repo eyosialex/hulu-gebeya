@@ -54,9 +54,7 @@ export function GameModes() {
           <h2 className="font-display text-4xl md:text-6xl font-extrabold">
             Missions Meet <span className="text-gradient">Reality</span>.
           </h2>
-          <p className="mt-4 text-sm text-muted-foreground">
-            Hover the cards to flip them →
-          </p>
+          <p className="mt-4 text-sm text-muted-foreground">Tap or hover the cards to flip them →</p>
         </div>
 
         <div className="flex flex-wrap items-center justify-center gap-8">
@@ -104,7 +102,7 @@ function ModeFront({ data }: { data: ModeData }) {
       </div>
 
       <div className="relative flex items-center justify-between text-xs text-muted-foreground">
-        <span>Hover to reveal</span>
+        <span>Tap or hover to reveal</span>
         <ArrowRight className="w-4 h-4 animate-pulse" />
       </div>
     </div>
@@ -139,10 +137,15 @@ function ModeBack({ data }: { data: ModeData }) {
         </ul>
       </div>
 
-      <button className={`w-full h-12 rounded-xl font-semibold text-sm shadow-glow hover:opacity-95 transition-opacity inline-flex items-center justify-center gap-2 ${accentBtn}`}>
-        {data.cta}
+      <a
+        href="/signin"
+        className={`w-full h-12 rounded-xl font-semibold text-sm shadow-glow hover:opacity-95 transition-opacity inline-flex items-center justify-center gap-2 ${accentBtn}`}
+        aria-label={`Sign in to use ${data.title}`}
+      >
+        <span className="sr-only">Open</span>
+        <span>{data.cta}</span>
         <ArrowRight className="w-4 h-4" />
-      </button>
+      </a>
     </div>
   );
 }

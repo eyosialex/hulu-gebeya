@@ -126,6 +126,8 @@
     font-family: var(--font-sans);
     background-image: var(--gradient-hero);
     background-attachment: fixed;
+    overflow-x: clip;
+    max-width: 100vw;
   }
 
   h1,
