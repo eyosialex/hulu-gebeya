@@ -2,14 +2,20 @@ import { useDashboard } from "./DashboardContext";
 import { Heatmap } from "./Heatmap";
 import { Flame, Target, ShieldCheck, TrendingUp, Camera } from "lucide-react";
 
-const recent = [
-  { name: "City Central Taxi Terminal", cat: "🚕 Transport", xp: 150, coins: 50, when: "2h ago" },
-  { name: "Hidden Coffee Lane", cat: "🍔 Food", xp: 220, coins: 80, when: "Yesterday" },
-  { name: "St. Mary Cathedral", cat: "⛪ Culture", xp: 180, coins: 60, when: "2d ago" },
-];
 
 export function OverviewView() {
-  const { user } = useDashboard();
+  const { user, recentActivity } = useDashboard();
+
+  const formatWhen = (dateStr: string) => {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diff = Math.floor((now.getTime() - date.getTime()) / 1000);
+    
+    if (diff < 60) return "Just now";
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+    return date.toLocaleDateString();
+  };
 
   return (
     <div className="space-y-6 p-6 lg:p-8">
@@ -21,7 +27,7 @@ export function OverviewView() {
           </h1>
         </div>
         <div className="rounded-full border border-primary/40 bg-primary/10 px-4 py-1.5 text-xs text-primary-glow">
-          🎯 You are 450 XP away from #2 Rank in {user.city}
+          🎯 Current City: {user.city}
         </div>
       </header>
 
@@ -38,41 +44,46 @@ export function OverviewView() {
             <h2 className="text-lg font-semibold text-foreground">Explorer Heatmap</h2>
             <p className="text-xs text-muted-foreground">365 days of exploration</p>
           </div>
-          <span className="text-xs text-muted-foreground">218 active days</span>
+          <span className="text-xs text-muted-foreground">Active exploration track</span>
         </div>
         <Heatmap />
       </section>
 
       <section className="rounded-2xl border border-border/60 bg-gradient-card p-5 shadow-elegant">
         <h2 className="mb-4 text-lg font-semibold text-foreground">Recent Activity</h2>
-        <ul className="space-y-3">
-          {recent.map((r) => (
-            <li
-              key={r.name}
-              className="flex items-center justify-between gap-3 rounded-xl border border-border/40 bg-surface/40 p-3"
-            >
-              <div className="flex items-center gap-3">
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/15 text-primary-glow">
-                  <Camera className="h-4 w-4" />
+        {recentActivity.length === 0 ? (
+          <p className="text-center py-8 text-muted-foreground text-sm">No activity recorded yet. Start exploring!</p>
+        ) : (
+          <ul className="space-y-3">
+            {recentActivity.map((r) => (
+              <li
+                key={r.missionId}
+                className="flex items-center justify-between gap-3 rounded-xl border border-border/40 bg-surface/40 p-3"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/15 text-primary-glow">
+                    <Camera className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-foreground">{r.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {r.cat} · {formatWhen(r.when)}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm font-medium text-foreground">{r.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {r.cat} · {r.when}
-                  </p>
+                <div className="text-right">
+                  <p className="text-xs text-primary-glow">+{r.xp} XP</p>
+                  <p className="text-xs text-amber-300">+{r.coins} 🪙</p>
                 </div>
-              </div>
-              <div className="text-right">
-                <p className="text-xs text-primary-glow">+{r.xp} XP</p>
-                <p className="text-xs text-amber-300">+{r.coins} 🪙</p>
-              </div>
-            </li>
-          ))}
-        </ul>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
     </div>
   );
 }
+
 
 function StatCard({
   icon: Icon,

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import { useDashboard, type CategoryId } from "./DashboardContext";
 import { cn } from "@/lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Home,
   ScrollText,
@@ -20,6 +21,7 @@ import {
   Sparkles,
   LogOut,
   X,
+  HelpCircle,
 } from "lucide-react";
 
 const categories: { id: CategoryId; label: string; icon: any; color: string }[] = [
@@ -40,6 +42,7 @@ const navItems = [
   { id: "leaderboard", label: "Leaderboard", icon: Trophy },
   { id: "rewards", label: "Rewards Shop", icon: ShoppingBag },
   { id: "social", label: "Social Hub", icon: Users },
+  { id: "quizzes", label: "Photo Quiz", icon: HelpCircle },
   { id: "settings", label: "Settings", icon: Settings },
 ] as const;
 
@@ -52,7 +55,7 @@ export function AppSidebar({
 }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { activeCategory, openCategory, user } = useDashboard();
+  const { activeCategory, openCategory, user, logout } = useDashboard();
   const [selectedNav, setSelectedNav] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<CategoryId | null>(null);
 
@@ -121,22 +124,34 @@ export function AppSidebar({
             <span>{user.xpNext.toLocaleString()}</span>
           </div>
           <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface">
-            <div
-              className="h-full rounded-full bg-gradient-primary"
-              style={{ width: `${(user.xp / user.xpNext) * 100}%` }}
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: `${(user.xp / user.xpNext) * 100}%` }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+              className="h-full rounded-full bg-gradient-primary shadow-glow-sm"
             />
           </div>
         </div>
 
         <div className="mt-4 grid grid-cols-2 gap-2">
-          <div className="rounded-lg border border-border/60 bg-surface/60 p-2 text-center">
+          <motion.div 
+            key={user.coins}
+            initial={{ scale: 0.95 }}
+            animate={{ scale: 1 }}
+            className="rounded-lg border border-border/60 bg-surface/60 p-2 text-center"
+          >
             <p className="text-[10px] uppercase tracking-wide text-muted-foreground">🪙 Coins</p>
             <p className="text-sm font-bold text-foreground">{user.coins.toLocaleString()}</p>
-          </div>
-          <div className="rounded-lg border border-border/60 bg-surface/60 p-2 text-center">
+          </motion.div>
+          <motion.div 
+            key={user.points}
+            initial={{ scale: 0.95 }}
+            animate={{ scale: 1 }}
+            className="rounded-lg border border-border/60 bg-surface/60 p-2 text-center"
+          >
             <p className="text-[10px] uppercase tracking-wide text-muted-foreground">⭐ Points</p>
             <p className="text-sm font-bold text-foreground">{user.points.toLocaleString()}</p>
-          </div>
+          </motion.div>
         </div>
       </div>
 
@@ -207,7 +222,7 @@ export function AppSidebar({
         <button
           onClick={() => {
             handleNav(() => {
-              navigate({ to: "/signin" });
+              logout();
             });
           }}
           className="mt-6 flex w-full items-center gap-3 rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-left text-sm text-destructive transition-all hover:bg-destructive/20"
@@ -215,6 +230,7 @@ export function AppSidebar({
           <LogOut className="h-4 w-4" />
           <span>Log out</span>
         </button>
+
       </div>
 
       <div className="border-t border-border/60 px-4 py-2 text-[10px] text-muted-foreground">

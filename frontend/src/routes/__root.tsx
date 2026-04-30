@@ -7,6 +7,7 @@ import {
   useRouterState,
 } from "@tanstack/react-router";
 import * as React from "react";
+import { QueryProvider } from "../components/QueryProvider";
 
 import appCss from "../styles.css?url";
 
@@ -76,8 +77,8 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   return (
-    <div>
+    <QueryProvider>
       <Outlet />
-    </div>
+    </QueryProvider>
   );
 }

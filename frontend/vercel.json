@@ -1,10 +1,14 @@
 {
   "version": 2,
-  "outputDirectory": "dist/client",
-  "rewrites": [
+  "builds": [
     {
-      "source": "/(.*)",
-      "destination": "/api/index.mjs"
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": { "distDir": "dist/client" }
     }
+  ],
+  "routes": [
+    { "src": "/_next/static/(.*)", "dest": "/_next/static/$1" },
+    { "src": "/(.*)", "dest": "/index.html" }
   ]
 }

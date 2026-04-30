@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { authApi } from "@/lib/api";
 import { useState } from "react";
 import { Mail, Lock, ArrowRight, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -21,11 +22,12 @@ function SignUpPage() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   const validateEmail = (value: string) =>
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 
-  const handleSignUp = (event: React.FormEvent) => {
+  const handleSignUp = async (event: React.FormEvent) => {
     event.preventDefault();
 
     if (!name || !email || !password || !confirmPassword) {
@@ -45,8 +47,17 @@ function SignUpPage() {
     }
 
     setError("");
-    // UI-only demo
-    navigate({ to: "/dashboard" });
+    setIsLoading(true);
+
+    try {
+      const data = await authApi.register({ name, email, password });
+      localStorage.setItem("token", data.token);
+      navigate({ to: "/dashboard" });
+    } catch (err: any) {
+      setError(err.message || "Failed to create account. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -122,8 +133,8 @@ function SignUpPage() {
           </p>
         )}
 
-        <Button type="submit" variant="hero" size="lg" className="w-full">
-          Create account <ArrowRight className="w-4 h-4 ml-1" />
+        <Button type="submit" variant="hero" size="lg" className="w-full" disabled={isLoading}>
+          {isLoading ? "Creating account..." : "Create account"} <ArrowRight className="w-4 h-4 ml-1" />
         </Button>
 
         <Button

@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import gsap from "gsap";
 import { useDashboard } from "./DashboardContext";
+import { useMissions } from "@/hooks/useMissions";
+import { useLeaderboard } from "@/hooks/useLeaderboard";
+import { useShop } from "@/hooks/useShop";
+import { useSocial } from "@/hooks/useSocial";
 import {
   Trophy,
   Crown,
@@ -36,7 +40,33 @@ import {
   CheckCircle2,
   BadgePercent,
   MessageSquareText,
+  HelpCircle,
+  Image as ImageIcon,
+  HeartPulse,
+  Palette,
+  Wrench,
+  Navigation2,
 } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+
+const CategoryIcons: Record<string, any> = {
+  food: Coffee,
+  game: Sparkles,
+  culture: Church,
+  transport: Bus,
+  study: Gem,
+  health: HeartPulse,
+  art: Palette,
+  services: Wrench,
+  hidden: Sparkles,
+  "Food & Drinks": Coffee,
+  "Transport": Bus,
+  "Culture & Faith": Church,
+  "Art & Creativity": Sparkles,
+  "Study & Education": Gem,
+  "Hidden Gems": Sparkles,
+  "High-Value": Trophy,
+};
 
 function useReveal(selector = "[data-reveal]") {
   const root = useRef<HTMLDivElement>(null);
@@ -56,253 +86,55 @@ function useReveal(selector = "[data-reveal]") {
   return root;
 }
 
-const missions = [
-  {
-    id: 142,
-    name: "Hidden Coffee Lane",
-    cat: "Food & Drinks",
-    icon: Coffee,
-    when: "2h ago",
-    xp: 220,
-    coins: 80,
-    ai: 99.2,
-    gps: "6.5244° N, 3.3792° E",
-    tip: "Order the iced cardamom — they roast beans in-house every Friday.",
-    tags: ["Hidden Gem", "Verified", "High-Value"],
-    photo: "from-orange-500/40 via-amber-700/30 to-rose-900/40",
-  },
-  {
-    id: 141,
-    name: "City Central Taxi Terminal",
-    cat: "Transport",
-    icon: Bus,
-    when: "Yesterday",
-    xp: 150,
-    coins: 50,
-    ai: 97.8,
-    gps: "6.5283° N, 3.3831° E",
-    tip: "Queue is shortest 6:40am. Drivers accept card after 7pm.",
-    tags: ["Live Status", "Peak Hours"],
-    photo: "from-yellow-500/40 via-amber-800/30 to-stone-900/40",
-  },
-  {
-    id: 140,
-    name: "St. Mary Cathedral",
-    cat: "Culture & Faith",
-    icon: Church,
-    when: "2d ago",
-    xp: 180,
-    coins: 60,
-    ai: 98.5,
-    gps: "6.5201° N, 3.3755° E",
-    tip: "Stained glass best photographed at 4pm western light.",
-    tags: ["Heritage", "Scenic"],
-    photo: "from-amber-300/30 via-yellow-700/20 to-stone-900/50",
-  },
-  {
-    id: 139,
-    name: "Mural Wall — District 7",
-    cat: "Art & Creativity",
-    icon: Sparkles,
-    when: "3d ago",
-    xp: 260,
-    coins: 95,
-    ai: 99.6,
-    gps: "6.5260° N, 3.3880° E",
-    tip: "New piece every two weeks — track @district7crew for drops.",
-    tags: ["Hidden Gem", "Trending"],
-    photo: "from-fuchsia-500/40 via-purple-700/30 to-indigo-900/40",
-  },
-  {
-    id: 138,
-    name: "Old Library Quiet Zone",
-    cat: "Study & Education",
-    icon: Gem,
-    when: "5d ago",
-    xp: 140,
-    coins: 45,
-    ai: 96.4,
-    gps: "6.5298° N, 3.3712° E",
-    tip: "Top floor has free wifi + leather armchairs. Closes at 9pm.",
-    tags: ["Quiet", "Free Wifi"],
-    photo: "from-sky-500/30 via-indigo-700/30 to-slate-900/40",
-  },
-  {
-    id: 137,
-    name: "Riverside Night Market",
-    cat: "Food & Drinks",
-    icon: Coffee,
-    when: "1w ago",
-    xp: 320,
-    coins: 110,
-    ai: 99.9,
-    gps: "6.5188° N, 3.3920° E",
-    tip: "Stall #14 grills suya till 2am. Bring cash, very small notes.",
-    tags: ["High-Value", "Night Only"],
-    photo: "from-emerald-500/30 via-teal-700/30 to-emerald-950/40",
-  },
-  {
-    id: 136,
-    name: "Marina Walkway Bistro",
-    cat: "Food & Drinks",
-    icon: Coffee,
-    when: "1w ago",
-    xp: 170,
-    coins: 55,
-    ai: 97.1,
-    gps: "6.5312° N, 3.3866° E",
-    tip: "Best table faces the water. Their jollof brunch sells out by 1pm.",
-    tags: ["Weekend Spot", "Popular"],
-    photo: "from-orange-500/40 via-yellow-700/20 to-stone-900/40",
-  },
-  {
-    id: 135,
-    name: "Lagoon Ferry Gate",
-    cat: "Transport",
-    icon: Bus,
-    when: "1w ago",
-    xp: 190,
-    coins: 65,
-    ai: 98.1,
-    gps: "6.5155° N, 3.4014° E",
-    tip: "Arrive early for the upper deck. Shade is limited after 11am.",
-    tags: ["Commuter Hub", "High-Value"],
-    photo: "from-sky-500/30 via-cyan-700/20 to-slate-900/40",
-  },
-  {
-    id: 134,
-    name: "Old Market Archive",
-    cat: "Culture & Faith",
-    icon: Church,
-    when: "2w ago",
-    xp: 205,
-    coins: 75,
-    ai: 98.9,
-    gps: "6.5334° N, 3.3708° E",
-    tip: "The archive clerk shares old city photos if you ask politely.",
-    tags: ["Heritage", "Story Rich"],
-    photo: "from-amber-500/30 via-rose-900/40 to-stone-900/50",
-  },
-  {
-    id: 133,
-    name: "Skyline Rooftop Court",
-    cat: "High-Value",
-    icon: Trophy,
-    when: "2w ago",
-    xp: 340,
-    coins: 140,
-    ai: 99.4,
-    gps: "6.5278° N, 3.3928° E",
-    tip: "Access is limited. Sunset shots here consistently score higher than average.",
-    tags: ["High-Value", "Sunset", "Limited Access"],
-    photo: "from-fuchsia-500/40 via-purple-700/30 to-indigo-900/40",
-  },
-  {
-    id: 132,
-    name: "Quarterly Street Jam",
-    cat: "This Week",
-    icon: Sparkles,
-    when: "This week",
-    xp: 310,
-    coins: 100,
-    ai: 99.0,
-    gps: "6.5222° N, 3.3818° E",
-    tip: "Pop-up performers rotate every Friday. Arrive before 7pm for the best crowd.",
-    tags: ["Trending", "This Week"],
-    photo: "from-emerald-500/30 via-primary/30 to-cyan-700/20",
-  },
-  {
-    id: 131,
-    name: "Laneway Sketch Garden",
-    cat: "Hidden Gems",
-    icon: Sparkles,
-    when: "This week",
-    xp: 285,
-    coins: 90,
-    ai: 99.5,
-    gps: "6.5251° N, 3.3874° E",
-    tip: "The mural changes weekly. Look for the chalk arrows behind the kiosk.",
-    tags: ["Hidden Gem", "Fresh Drop"],
-    photo: "from-fuchsia-500/40 via-rose-500/30 to-slate-900/40",
-  },
-];
-
-const missionFilters = [
-  {
-    id: "all",
-    label: "All",
-    icon: Target,
-    description: "Every verified mission",
-    accent: "text-primary-glow",
-    count: missions.length,
-  },
-  {
-    id: "food",
-    label: "Food",
-    icon: Coffee,
-    description: "Food & Drinks missions",
-    accent: "text-orange-300",
-    count: missions.filter((m) => m.cat === "Food & Drinks").length,
-  },
-  {
-    id: "transport",
-    label: "Transport",
-    icon: Bus,
-    description: "Transit and mobility spots",
-    accent: "text-sky-300",
-    count: missions.filter((m) => m.cat === "Transport").length,
-  },
-  {
-    id: "culture",
-    label: "Culture",
-    icon: Church,
-    description: "Heritage and faith locations",
-    accent: "text-amber-200",
-    count: missions.filter((m) => m.cat === "Culture & Faith").length,
-  },
-  {
-    id: "hidden",
-    label: "Hidden Gems",
-    icon: Sparkles,
-    description: "Low-visibility discoveries",
-    accent: "text-fuchsia-300",
-    count: missions.filter((m) => m.tags.includes("Hidden Gem") || m.cat === "Hidden Gems").length,
-  },
-  {
-    id: "high-value",
-    label: "High-Value",
-    icon: BadgePercent,
-    description: "Top scoring captures",
-    accent: "text-emerald-300",
-    count: missions.filter((m) => m.tags.includes("High-Value") || m.cat === "High-Value").length,
-  },
-  {
-    id: "week",
-    label: "This Week",
-    icon: MessageSquareText,
-    description: "Fresh missions from this week",
-    accent: "text-sky-300",
-    count: missions.filter((m) => m.when === "This week" || m.when === "This week" || m.when === "This week").length,
-  },
-];
-
-const filterMatch: Record<string, (mission: (typeof missions)[number]) => boolean> = {
-  all: () => true,
-  food: (mission) => mission.cat === "Food & Drinks",
-  transport: (mission) => mission.cat === "Transport",
-  culture: (mission) => mission.cat === "Culture & Faith",
-  hidden: (mission) => mission.tags.includes("Hidden Gem") || mission.cat === "Hidden Gems",
-  "high-value": (mission) => mission.tags.includes("High-Value") || mission.cat === "High-Value",
-  week: (mission) => mission.when === "This week" || mission.when === "1w ago" || mission.when === "2h ago",
-};
-
 export function MissionLog() {
+  const { missions, isLoading } = useMissions();
   const [activeFilter, setActiveFilter] = useState("all");
 
-  const filteredMissions = useMemo(
-    () => missions.filter(filterMatch[activeFilter] ?? filterMatch.all),
-    [activeFilter],
-  );
+  const missionFilters = useMemo(() => [
+    {
+      id: "all",
+      label: "All",
+      icon: Target,
+      description: "Every verified mission",
+      accent: "text-primary-glow",
+      count: missions.length,
+    },
+    {
+      id: "food",
+      label: "Food",
+      icon: Coffee,
+      description: "Food & Drinks missions",
+      accent: "text-orange-300",
+      count: missions.filter((m) => m.cat === "food" || m.cat === "Food & Drinks").length,
+    },
+    {
+      id: "transport",
+      label: "Transport",
+      icon: Bus,
+      description: "Transit and mobility spots",
+      accent: "text-sky-300",
+      count: missions.filter((m) => m.cat === "transport" || m.cat === "Transport").length,
+    },
+    {
+      id: "culture",
+      label: "Culture",
+      icon: Church,
+      description: "Heritage and faith locations",
+      accent: "text-amber-200",
+      count: missions.filter((m) => m.cat === "culture" || m.cat === "Culture & Faith").length,
+    },
+  ], [missions]);
+
+  const filteredMissions = useMemo(() => {
+    if (activeFilter === "all") return missions;
+    return missions.filter((m) => {
+      const cat = m.cat.toLowerCase();
+      if (activeFilter === "food") return cat.includes("food");
+      if (activeFilter === "transport") return cat.includes("transport");
+      if (activeFilter === "culture") return cat.includes("culture");
+      return true;
+    });
+  }, [activeFilter, missions]);
 
   const stats = useMemo(() => {
     const visible = filteredMissions.length;
@@ -313,9 +145,17 @@ export function MissionLog() {
     return { visible, xp, coins, avgAi };
   }, [filteredMissions]);
 
+  if (isLoading) {
+    return (
+      <div className="flex h-64 w-full items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+
   return (
     <div>
-      <Wrap title="Mission Log" subtitle="Verified captures · AI confidence visible">
+      <Wrap title="Mission Log" subtitle="Verified captures Â· AI confidence visible">
         <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4 xl:grid-cols-6">
           <MiniStat icon={CheckCircle2} label="Verified" value="142" tint="text-success" />
           <MiniStat icon={Flame} label="This Week" value="9" tint="text-orange-300" />
@@ -332,7 +172,7 @@ export function MissionLog() {
               <h3 className="mt-1 text-lg font-semibold text-foreground">Tap a card to filter the log</h3>
             </div>
             <p className="text-xs text-muted-foreground">
-              {stats.visible} missions · {stats.coins.toLocaleString()} coins · {stats.avgAi.toFixed(1)}% AI trust
+              {stats.visible} missions Â· {stats.coins.toLocaleString()} coins Â· {stats.avgAi.toFixed(1)}% AI trust
             </p>
           </div>
 
@@ -387,7 +227,7 @@ export function MissionLog() {
 
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
           {filteredMissions.map((m) => {
-            const Icon = m.icon;
+            const Icon = CategoryIcons[m.cat] || Target;
             return (
               <article
                 key={m.id}
@@ -430,7 +270,7 @@ export function MissionLog() {
 
                   <div className="mt-3 flex items-center justify-between border-t border-border/40 pt-3 text-xs">
                     <span className="text-primary-glow">+{m.xp} XP</span>
-                    <span className="text-amber-300">+{m.coins} 🪙</span>
+                    <span className="text-amber-300">+{m.coins} ðŸª™</span>
                     <button className="text-muted-foreground hover:text-primary-glow">
                       <ArrowUpRight className="h-4 w-4" />
                     </button>
@@ -453,20 +293,19 @@ export function MissionLog() {
 
 export function Leaderboard() {
   const { user } = useDashboard();
+  const { leaderboard, isLoading } = useLeaderboard();
   const root = useReveal();
 
-  const top = [
-    { rank: 1, name: "NovaRunner", xp: 24890, missions: 312, streak: 41, badge: "Diamond" },
-    { rank: 2, name: "PixelHawk", xp: 19120, missions: 254, streak: 28, badge: "Diamond" },
-    { rank: 3, name: "CityFox", xp: 18760, missions: 240, streak: 22, badge: "Gold" },
-  ];
-  const list = [
-    { rank: 4, name: "MapMage", xp: 17900, missions: 230, streak: 19 },
-    { rank: 5, name: "QuestSeeker", xp: 16200, missions: 210, streak: 17 },
-    { rank: 6, name: "TrailBlaze", xp: 15770, missions: 198, streak: 14 },
-    { rank: 7, name: "NeonWalker", xp: 14990, missions: 189, streak: 11 },
-    { rank: 8, name: "EchoPath", xp: 13880, missions: 175, streak: 9 },
-  ];
+  const top = leaderboard.slice(0, 3);
+  const list = leaderboard.slice(3);
+
+  if (isLoading) {
+    return (
+      <div className="flex h-64 w-full items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
+  }
 
   return (
     <div ref={root}>
@@ -507,10 +346,10 @@ export function Leaderboard() {
                 <Icon className="mx-auto h-7 w-7 text-primary-glow" />
                 <p className="mt-2 text-sm font-semibold text-foreground">{p.name}</p>
                 <p className="text-[10px] text-amber-300">{p.badge}</p>
-                <p className="mt-2 text-xs text-muted-foreground">{p.xp.toLocaleString()} XP</p>
+                <p className="mt-2 text-xs text-muted-foreground">{p.points.toLocaleString()} XP</p>
                 <div className="mt-2 grid grid-cols-2 gap-1 text-[10px] text-muted-foreground">
-                  <span>{p.missions} 📜</span>
-                  <span className="text-orange-300">🔥 {p.streak}</span>
+                  <span>{p.missions} ðŸ“œ</span>
+                  <span className="text-orange-300">ðŸ”¥ {p.streak}</span>
                 </div>
                 <p className="mt-2 text-[10px] font-mono text-primary-glow">#{p.rank}</p>
               </div>
@@ -533,7 +372,7 @@ export function Leaderboard() {
             <Row
               rank={47}
               name={`${user.name} (you)`}
-              xp={user.points}
+              points={user.points}
               missions={user.totalMissions}
               streak={user.streak}
               highlight
@@ -548,14 +387,14 @@ export function Leaderboard() {
 function Row({
   rank,
   name,
-  xp,
+  points,
   missions,
   streak,
   highlight,
 }: {
   rank: number;
   name: string;
-  xp: number;
+  points: number;
   missions: number;
   streak: number;
   highlight?: boolean;
@@ -569,127 +408,25 @@ function Row({
       <span className="col-span-1 font-mono">#{rank}</span>
       <span className="col-span-5 truncate">{name}</span>
       <span className="col-span-2 text-right text-xs">{missions}</span>
-      <span className="col-span-2 text-right text-xs text-orange-300">🔥 {streak}</span>
+      <span className="col-span-2 text-right text-xs text-orange-300">ðŸ”¥ {streak}</span>
       <span className={`col-span-2 text-right ${highlight ? "text-primary-glow" : ""}`}>
-        {xp.toLocaleString()}
+        {points.toLocaleString()}
       </span>
     </div>
   );
 }
 
-const shopItems = [
-  {
-    name: "2x XP Booster",
-    price: 300,
-    type: "Booster",
-    icon: Zap,
-    desc: "Double XP on every verified mission for 24h.",
-    detail: "Stacks with streak bonus · Activates instantly",
-    tint: "from-amber-500/30 to-orange-700/20",
-  },
-  {
-    name: "Search Radar",
-    price: 450,
-    type: "Booster",
-    icon: Radar,
-    desc: "Reveals nearby Hidden Gem pins within 2km radius.",
-    detail: "5 uses · Lasts 30 minutes each",
-    tint: "from-primary/30 to-cyan-700/20",
-  },
-  {
-    name: "Streak Shield",
-    price: 250,
-    type: "Booster",
-    icon: ShieldCheck,
-    desc: "Protects your daily streak for one missed day.",
-    detail: "Auto-applies when you skip · 1 charge",
-    tint: "from-emerald-500/30 to-teal-700/20",
-  },
-  {
-    name: "10% off Cafe Lumière",
-    price: 150,
-    type: "Coupon",
-    icon: Ticket,
-    desc: "Sip + scroll at the city's quietest brew bar.",
-    detail: "Valid 30 days · QR at checkout",
-    tint: "from-rose-500/30 to-pink-700/20",
-  },
-  {
-    name: "Transit Voucher",
-    price: 600,
-    type: "Coupon",
-    icon: Bus,
-    desc: "Free 5-trip pass on city transport network.",
-    detail: "Activate within 14 days · Single user",
-    tint: "from-yellow-500/30 to-amber-700/20",
-  },
-  {
-    name: "Diamond Avatar Frame",
-    price: 1200,
-    type: "Cosmetic",
-    icon: Crown,
-    desc: "Animated rank frame visible on leaderboards.",
-    detail: "Permanent · Unlocks at Gold rank+",
-    tint: "from-fuchsia-500/30 to-purple-700/20",
-  },
-  {
-    name: "Mystery Loot Box",
-    price: 500,
-    type: "Pack",
-    icon: Gift,
-    desc: "Random booster + 1-3 partner coupons.",
-    detail: "Guaranteed value 700+ 🪙",
-    tint: "from-indigo-500/30 to-blue-700/20",
-  },
-  {
-    name: "Mission Token",
-    price: 200,
-    type: "Pack",
-    icon: Award,
-    desc: "Skip GPS proximity check on next capture.",
-    detail: "1 use · Photo + AI verify still required",
-    tint: "from-slate-500/30 to-zinc-700/20",
-  },
-  {
-    name: "Night Ride Pass",
-    price: 380,
-    type: "Travel",
-    icon: Bus,
-    desc: "Free late-night transit credits for 3 city hops.",
-    detail: "Expires in 7 days · Peak hours included",
-    tint: "from-sky-500/30 to-cyan-700/20",
-  },
-  {
-    name: "Museum Access",
-    price: 260,
-    type: "Pass",
-    icon: Church,
-    desc: "Unlock heritage partner venues and guided entries.",
-    detail: "Valid at 12 locations · Weekends only",
-    tint: "from-amber-300/30 to-yellow-700/20",
-  },
-  {
-    name: "Photo Boost",
-    price: 420,
-    type: "Boost",
-    icon: Camera,
-    desc: "Boost mission photo score for one high-value capture.",
-    detail: "Single use · Improves AI confidence",
-    tint: "from-fuchsia-500/30 to-purple-700/20",
-  },
-  {
-    name: "Creator Badge",
-    price: 700,
-    type: "Cosmetic",
-    icon: Star,
-    desc: "Show a rare profile badge on the leaderboard.",
-    detail: "Permanent · Gold rank+ only",
-    tint: "from-emerald-500/30 to-teal-700/20",
-  },
-];
-
 export function RewardsShop() {
   const { user } = useDashboard();
+  const { shopItems, isLoading } = useShop();
+
+  if (isLoading) {
+    return (
+      <div className="flex h-64 w-full items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -699,7 +436,7 @@ export function RewardsShop() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-muted-foreground">Wallet Balance</p>
-                <p className="mt-1 text-4xl font-bold text-foreground">🪙 {user.coins.toLocaleString()}</p>
+                <p className="mt-1 text-4xl font-bold text-foreground">ðŸª™ {user.coins.toLocaleString()}</p>
                 <p className="mt-2 text-xs text-muted-foreground">
                   Earn more by completing high-value missions and daily streaks.
                 </p>
@@ -751,13 +488,13 @@ export function RewardsShop() {
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {shopItems.map((it) => {
-            const Icon = it.icon;
+            const Icon = CategoryIcons[it.type] || Zap;
             return (
               <article
-                key={it.name}
+                key={it.id}
                 className="flex flex-col rounded-2xl border border-border/60 bg-gradient-card p-4 transition-all hover:-translate-y-1 hover:border-primary/50 hover:shadow-glow"
               >
-                <div className={`flex h-24 items-center justify-center rounded-xl bg-linear-to-br ${it.tint} text-foreground`}>
+                <div className={`flex h-24 items-center justify-center rounded-xl bg-linear-to-br ${it.tint || 'from-surface/60 to-surface/30'} text-foreground`}>
                   <Icon className="h-9 w-9 text-primary-glow drop-shadow" />
                 </div>
                 <div className="mt-3 flex items-start justify-between">
@@ -766,10 +503,10 @@ export function RewardsShop() {
                     {it.type}
                   </span>
                 </div>
-                <p className="mt-1 text-xs text-muted-foreground">{it.desc}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{it.description}</p>
                 <p className="mt-2 text-[10px] text-primary-glow">{it.detail}</p>
                 <button className="mt-3 w-full rounded-full bg-gradient-primary px-3 py-2 text-xs font-semibold text-primary-foreground shadow-glow">
-                  Buy · 🪙 {it.price}
+                  Buy Â· ðŸª™ {it.price}
                 </button>
               </article>
             );
@@ -781,28 +518,15 @@ export function RewardsShop() {
 }
 
 export function SocialHub() {
-  const friends = [
-    { name: "Lina", status: "Hunting Hidden Gems · 1.2km away", live: true, xp: 12480, icon: Sparkles },
-    { name: "Tobi", status: "In transit to Marina Café", live: true, xp: 9840, icon: Bus },
-    { name: "Zara", status: "Idle · last seen 2h ago", live: false, xp: 15220, icon: Coffee },
-    { name: "Kai", status: "Captured 3 missions today", live: true, xp: 18900, icon: Camera },
-  ];
-  const teamQuests = [
-    {
-      title: "Marina Sunset Trail",
-      desc: "3 explorers must check in at 3 spots within 1 hour.",
-      reward: "+800 XP each · +200 🪙 bonus",
-      progress: 66,
-      slots: "2 / 3",
-    },
-    {
-      title: "Heritage Loop",
-      desc: "Photograph 5 historic buildings as a duo.",
-      reward: "+600 XP each · Diamond frame chance",
-      progress: 20,
-      slots: "1 / 2",
-    },
-  ];
+  const { friends, teamQuests, isLoading } = useSocial();
+
+  if (isLoading) {
+    return (
+      <div className="flex h-64 w-full items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -819,39 +543,48 @@ export function SocialHub() {
               </button>
             </div>
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-              {friends.map((f) => {
-                const Icon = f.icon;
-                return (
-                  <div
-                    key={f.name}
-                    className="rounded-2xl border border-border/40 bg-surface/40 p-4"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="relative">
-                        <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-primary text-xs font-bold text-primary-foreground">
-                          {f.name[0]}
+              <AnimatePresence>
+                {friends.map((f, i) => {
+                  const Icon = CategoryIcons[f.categoryContext] || Users;
+                  return (
+                    <motion.li
+                      key={f.userId}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: i * 0.05 }}
+                      className="flex list-none flex-col gap-3 rounded-xl border border-border/40 bg-surface/40 p-4 transition-all hover:border-primary/40 hover:bg-surface/60"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="relative">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-surface text-sm font-bold text-foreground">
+                              {f.name.slice(0, 1)}
+                            </div>
+                            {f.live && (
+                              <div className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full border-2 border-black bg-success shadow-glow-success animate-pulse" />
+                            )}
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                               <p className="text-sm font-semibold text-foreground">{f.name}</p>
+                               <Icon className="h-3 w-3 text-primary-glow" />
+                            </div>
+                            <p className="text-[10px] text-muted-foreground uppercase">{f.status}</p>
+                          </div>
                         </div>
-                        <span
-                          className={`absolute -right-0.5 -bottom-0.5 h-3 w-3 rounded-full border-2 border-black ${
-                            f.live ? "bg-success animate-pulse" : "bg-muted"
-                          }`}
-                        />
+                        <div className="flex gap-1">
+                           <button className="rounded-full bg-surface/60 p-1.5 text-muted-foreground hover:bg-primary/20 hover:text-primary-glow transition-colors">ðŸ‘ </button>
+                           <button className="rounded-full bg-surface/60 p-1.5 text-muted-foreground hover:bg-primary/20 hover:text-primary-glow transition-colors">ðŸš€</button>
+                        </div>
                       </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-foreground">{f.name}</p>
-                        <p className="flex items-center gap-1 truncate text-xs text-muted-foreground">
-                          <Icon className="h-3 w-3 text-primary-glow" />
-                          {f.status}
-                        </p>
+                      <div className="flex items-center justify-between border-t border-border/40 pt-2 text-[10px]">
+                        <span className="text-muted-foreground text-xs">Level {Math.floor(f.xp / 1000) + 1}</span>
+                        <span className="font-mono text-primary-glow text-xs">{f.xp.toLocaleString()} XP</span>
                       </div>
-                    </div>
-                    <div className="mt-3 flex items-center justify-between border-t border-border/40 pt-3 text-xs">
-                      <span className="text-muted-foreground">Crew score</span>
-                      <span className="font-mono text-primary-glow">{f.xp.toLocaleString()} XP</span>
-                    </div>
-                  </div>
-                );
-              })}
+                    </motion.li>
+                  );
+                })}
+              </AnimatePresence>
             </div>
           </div>
 
@@ -861,71 +594,12 @@ export function SocialHub() {
               <p className="mt-3 text-sm font-semibold text-foreground">Your Referral Code</p>
               <p className="mt-2 font-mono text-2xl tracking-widest text-primary-glow">SMART-MAP-2026</p>
               <p className="mt-3 text-xs text-muted-foreground">
-                Earn <span className="text-primary-glow">+500 🪙</span> when a friend completes their first mission.
+                Earn <span className="text-primary-glow">+500 ðŸª™</span> when a friend completes their first mission.
               </p>
-              <div className="mt-4 grid grid-cols-3 gap-2 text-center">
-                <div className="rounded-lg border border-border/60 bg-surface/40 p-2">
-                  <p className="text-[10px] uppercase text-muted-foreground">Invited</p>
-                  <p className="text-sm font-bold text-foreground">12</p>
-                </div>
-                <div className="rounded-lg border border-border/60 bg-surface/40 p-2">
-                  <p className="text-[10px] uppercase text-muted-foreground">Active</p>
-                  <p className="text-sm font-bold text-success">7</p>
-                </div>
-                <div className="rounded-lg border border-border/60 bg-surface/40 p-2">
-                  <p className="text-[10px] uppercase text-muted-foreground">Earned</p>
-                  <p className="text-sm font-bold text-amber-300">3.5k</p>
-                </div>
-              </div>
               <button className="mt-4 w-full rounded-full bg-gradient-primary px-4 py-2 text-sm font-semibold text-primary-foreground">
                 Share to Socials
               </button>
             </div>
-
-            <div className="rounded-3xl border border-border/60 bg-gradient-card p-5">
-              <p className="text-xs uppercase tracking-widest text-muted-foreground">Live Network</p>
-              <div className="mt-3 grid grid-cols-3 gap-2 text-center">
-                <div className="rounded-xl border border-border/40 bg-surface/40 p-3">
-                  <p className="text-[10px] uppercase text-muted-foreground">Circles</p>
-                  <p className="text-lg font-bold text-foreground">04</p>
-                </div>
-                <div className="rounded-xl border border-border/40 bg-surface/40 p-3">
-                  <p className="text-[10px] uppercase text-muted-foreground">Live</p>
-                  <p className="text-lg font-bold text-success">03</p>
-                </div>
-                <div className="rounded-xl border border-border/40 bg-surface/40 p-3">
-                  <p className="text-[10px] uppercase text-muted-foreground">Invites</p>
-                  <p className="text-lg font-bold text-primary-glow">12</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-6">
-          <h3 className="mb-3 text-sm font-semibold text-foreground">Open Team Quests</h3>
-          <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-            {teamQuests.map((q) => (
-              <article
-                key={q.title}
-                className="rounded-3xl border border-border/60 bg-gradient-card p-5 transition-all hover:-translate-y-1 hover:border-primary/50"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-semibold text-foreground">{q.title}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">{q.desc}</p>
-                  </div>
-                  <span className="rounded-full border border-primary/30 bg-primary/15 px-2 py-1 text-[10px] text-primary-glow">{q.slots}</span>
-                </div>
-                <p className="mt-4 text-[11px] text-amber-300">{q.reward}</p>
-                <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-surface">
-                  <div className="h-full rounded-full bg-gradient-primary" style={{ width: `${q.progress}%` }} />
-                </div>
-                <button className="mt-4 w-full rounded-full border border-primary/40 bg-primary/10 px-4 py-2 text-xs font-semibold text-primary-glow hover:bg-primary/20">
-                  Join Quest
-                </button>
-              </article>
-            ))}
           </div>
         </div>
       </Wrap>
@@ -934,243 +608,33 @@ export function SocialHub() {
 }
 
 export function SettingsView() {
-  const [isEditingProfile, setIsEditingProfile] = useState(false);
-  const [displayName, setDisplayName] = useState("Alex Morgan");
-  const [bio, setBio] = useState("Urban explorer, coffee hunter");
-  const [city, setCity] = useState("Lagos · West Region");
+  const { user } = useDashboard();
   const [gpsHighAccuracy, setGpsHighAccuracy] = useState(true);
-  const [aiCalibrationAssist, setAiCalibrationAssist] = useState(true);
-  const [incognitoMode, setIncognitoMode] = useState(false);
-  const [locationGhosting, setLocationGhosting] = useState(false);
-  const [twoFactorAuth, setTwoFactorAuth] = useState(true);
-  const [loginAlerts, setLoginAlerts] = useState(true);
 
   return (
     <div>
       <Wrap title="Settings" subtitle="Account intelligence and control">
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.05fr_0.95fr]">
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-1">
           <div className="rounded-3xl border border-border/60 bg-gradient-card p-5 shadow-elegant">
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              <div className="flex items-center gap-4">
-                <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-blue-300/30 bg-linear-to-br from-blue-500 via-indigo-500 to-cyan-500 text-2xl font-bold text-white shadow-lg shadow-blue-950/40">
-                  AM
-                </div>
-                <div>
-                  <p className="text-xs uppercase tracking-widest text-muted-foreground">Profile</p>
-                  <h3 className="mt-1 text-xl font-semibold text-foreground">Identity and location</h3>
-                  <p className="mt-1 text-sm text-muted-foreground">Personalize your public identity without losing the quick-edit flow.</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setIsEditingProfile((value) => !value)}
-                className="rounded-full bg-gradient-primary px-4 py-2 text-xs font-semibold text-primary-foreground shadow-glow"
-              >
-                {isEditingProfile ? "Save profile" : "Edit profile"}
-              </button>
+            <div className="flex items-center gap-4">
+               <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-blue-300/30 bg-linear-to-br from-blue-500 via-indigo-500 to-cyan-500 text-2xl font-bold text-white shadow-lg shadow-blue-950/40">
+                  {user.initials}
+               </div>
+               <div>
+                  <h3 className="text-xl font-semibold text-foreground">{user.name}</h3>
+                  <p className="text-sm text-muted-foreground">{user.email}</p>
+               </div>
             </div>
-
-            <div className="mt-5 grid gap-4">
-              <div className="rounded-2xl border border-border/60 bg-gradient-card p-4 shadow-elegant">
-                <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Profile summary</p>
-                <div className="mt-3 grid grid-cols-1 gap-3 text-sm">
-                  <div className="rounded-xl border border-border/40 bg-surface/40 p-3">
-                    <p className="text-[10px] uppercase text-muted-foreground">Display Name</p>
-                    {isEditingProfile ? (
-                      <input
-                        value={displayName}
-                        onChange={(event) => setDisplayName(event.target.value)}
-                        className="mt-2 w-full rounded-lg border border-border bg-surface px-2 py-2 text-sm text-foreground outline-none focus:border-primary/40"
-                      />
-                    ) : (
-                      <p className="mt-2 font-medium text-foreground">{displayName}</p>
-                    )}
-                  </div>
-                  <div className="rounded-xl border border-border/40 bg-surface/40 p-3">
-                    <p className="text-[10px] uppercase text-muted-foreground">City</p>
-                    {isEditingProfile ? (
-                      <input
-                        value={city}
-                        onChange={(event) => setCity(event.target.value)}
-                        className="mt-2 w-full rounded-lg border border-border bg-surface px-2 py-2 text-sm text-foreground outline-none focus:border-primary/40"
-                      />
-                    ) : (
-                      <p className="mt-2 font-medium text-foreground">{city}</p>
-                    )}
-                  </div>
-                  <div className="rounded-xl border border-border/40 bg-surface/40 p-3">
-                    <p className="text-[10px] uppercase text-muted-foreground">Bio</p>
-                    {isEditingProfile ? (
-                      <textarea
-                        rows={4}
-                        value={bio}
-                        onChange={(event) => setBio(event.target.value)}
-                        className="mt-2 w-full resize-none rounded-lg border border-border bg-surface px-2 py-2 text-sm text-foreground outline-none focus:border-primary/40"
-                      />
-                    ) : (
-                      <p className="mt-2 text-sm leading-6 text-foreground">{bio}</p>
-                    )}
-                  </div>
-                  <div className="rounded-xl border border-border/40 bg-surface/40 p-3">
-                    <p className="text-[10px] uppercase text-muted-foreground">Badge</p>
-                    <p className="mt-2 text-sm font-medium text-foreground">City explorer</p>
-                    <p className="mt-1 text-[10px] text-muted-foreground">Shown across social and discovery panels</p>
-                  </div>
-                  <div className="rounded-xl border border-border/40 bg-surface/40 p-3">
-                    <p className="text-[10px] uppercase text-muted-foreground">Profile score</p>
-                    <p className="mt-2 text-sm font-medium text-foreground">92% complete</p>
-                    <p className="mt-1 text-[10px] text-muted-foreground">Add one more detail to unlock higher visibility</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid gap-3">
-                <div className="rounded-2xl border border-border/60 bg-gradient-card p-4 shadow-elegant">
-                  <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Identity rules</p>
-                  <p className="mt-2 text-sm text-foreground">Editable once / 30 days</p>
-                  <p className="mt-1 text-xs text-muted-foreground">Your display name is locked after saving, but bio and city can still be refreshed later.</p>
-                </div>
-                <div className="rounded-2xl border border-border/60 bg-gradient-card p-4 shadow-elegant">
-                  <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Public presence</p>
-                  <p className="mt-2 text-sm text-foreground">Live map visibility</p>
-                  <p className="mt-1 text-xs text-muted-foreground">Control how much location detail appears in the feed and social panels.</p>
-                </div>
-                <div className="rounded-2xl border border-border/60 bg-gradient-card p-4 shadow-elegant">
-                  <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Activity</p>
-                  <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs">
-                    <div className="rounded-xl border border-border/40 bg-surface/40 p-2">
-                      <p className="text-[10px] uppercase text-muted-foreground">Missions</p>
-                      <p className="mt-1 text-sm font-semibold text-foreground">142</p>
-                    </div>
-                    <div className="rounded-xl border border-border/40 bg-surface/40 p-2">
-                      <p className="text-[10px] uppercase text-muted-foreground">Live</p>
-                      <p className="mt-1 text-sm font-semibold text-success">On</p>
-                    </div>
-                    <div className="rounded-xl border border-border/40 bg-surface/40 p-2">
-                      <p className="text-[10px] uppercase text-muted-foreground">Rank</p>
-                      <p className="mt-1 text-sm font-semibold text-primary-glow">A+</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid gap-4">
-            <div className="rounded-3xl border border-border/60 bg-gradient-card p-5">
-              <div className="mb-3 flex items-center gap-2">
-                <Satellite className="h-4 w-4 text-primary-glow" />
-                <p className="text-sm font-semibold text-foreground">Device Intelligence</p>
-              </div>
-              <div className="space-y-3">
-                <Toggle label="GPS — High Accuracy" on={gpsHighAccuracy} onToggle={() => setGpsHighAccuracy((value) => !value)} hint="Drains battery faster" />
-                <Toggle label="AI Calibration assist" on={aiCalibrationAssist} onToggle={() => setAiCalibrationAssist((value) => !value)} hint="Camera test in low light" />
-                <Toggle label="Incognito Mode" on={incognitoMode} onToggle={() => setIncognitoMode((value) => !value)} hint="Hide from friends' live feed" />
-                <Toggle label="Location Ghosting" on={locationGhosting} onToggle={() => setLocationGhosting((value) => !value)} hint="Snap to street, not exact pin" />
-              </div>
-            </div>
-
-            <div className="rounded-3xl border border-border/60 bg-gradient-card p-5">
-              <div className="mb-3 flex items-center gap-2">
-                <Lock className="h-4 w-4 text-primary-glow" />
-                <p className="text-sm font-semibold text-foreground">Account Security</p>
-              </div>
-              <div className="space-y-3">
-                <Field label="Email" value="alex@smartmap.app" />
-                <Toggle label="Two-Factor Authentication" on={twoFactorAuth} onToggle={() => setTwoFactorAuth((value) => !value)} />
-                <Toggle label="Login alerts" on={loginAlerts} onToggle={() => setLoginAlerts((value) => !value)} />
-                <Field label="Password" value="••••••••" hint="Last changed 12 days ago" />
-              </div>
-            </div>
-
-            <div className="rounded-3xl border border-border/60 bg-gradient-card p-5">
-              <div className="mb-3 flex items-center gap-2">
-                <Activity className="h-4 w-4 text-primary-glow" />
-                <p className="text-sm font-semibold text-foreground">System Status</p>
-              </div>
-              <p className="text-sm text-muted-foreground">System details are shown in the map header and live quest panel.</p>
+            <div className="mt-6 space-y-4">
+               <Toggle label="GPS High Accuracy" on={gpsHighAccuracy} onToggle={() => setGpsHighAccuracy(!gpsHighAccuracy)} hint="Precision mapping mode" />
+               <div className="rounded-xl border border-border/40 bg-surface/40 p-4">
+                  <p className="text-xs font-semibold text-foreground uppercase tracking-widest">Recent Activity</p>
+                  <ActivityList />
+               </div>
             </div>
           </div>
         </div>
       </Wrap>
-    </div>
-  );
-}
-
-function Section({
-  title,
-  icon: Icon,
-  children,
-  ...rest
-}: {
-  title: string;
-  icon: any;
-  children: React.ReactNode;
-} & Record<string, any>) {
-  return (
-    <div {...rest} className="rounded-2xl border border-border/60 bg-gradient-card p-5">
-      <div className="mb-3 flex items-center gap-2">
-        <Icon className="h-4 w-4 text-primary-glow" />
-        <p className="text-sm font-semibold text-foreground">{title}</p>
-      </div>
-      <div className="space-y-3">{children}</div>
-    </div>
-  );
-}
-
-function Field({ label, value, hint }: { label: string; value: string; hint?: string }) {
-  return (
-    <div className="rounded-lg border border-border/40 bg-surface/40 px-3 py-2">
-      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p className="text-sm text-foreground">{value}</p>
-      {hint && <p className="text-[10px] text-muted-foreground">{hint}</p>}
-    </div>
-  );
-}
-
-function Toggle({
-  label,
-  on,
-  hint,
-  onToggle,
-}: {
-  label: string;
-  on?: boolean;
-  hint?: string;
-  onToggle?: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onToggle}
-      className="flex w-full items-center justify-between rounded-lg border border-border/40 bg-surface/40 px-3 py-2 text-left transition hover:border-primary/40 hover:bg-surface/60"
-    >
-      <div>
-        <p className="text-xs text-foreground">{label}</p>
-        {hint && <p className="text-[10px] text-muted-foreground">{hint}</p>}
-      </div>
-      <span className={`relative h-5 w-9 rounded-full ${on ? "bg-primary" : "bg-surface"} transition`}>
-        <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-foreground transition ${on ? "left-4.5" : "left-0.5"}`} />
-      </span>
-    </button>
-  );
-}
-
-function StatusRow({
-  label,
-  status,
-  tone,
-}: {
-  label: string;
-  status: string;
-  tone: "success" | "muted";
-}) {
-  return (
-    <div className="flex items-center justify-between rounded-lg border border-border/40 bg-surface/40 px-3 py-2 text-xs">
-      <span className="text-foreground">{label}</span>
-      <span className={tone === "success" ? "text-success" : "text-muted-foreground"}>
-        {tone === "success" && <span className="mr-1">●</span>}
-        {status}
-      </span>
     </div>
   );
 }
@@ -1213,6 +677,94 @@ function Wrap({
         <h1 className="mt-1 text-3xl font-bold text-foreground">{subtitle}</h1>
       </header>
       {children}
+    </div>
+  );
+}
+
+function Toggle({
+  label,
+  on,
+  hint,
+  onToggle,
+}: {
+  label: string;
+  on?: boolean;
+  hint?: string;
+  onToggle?: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      className="flex w-full items-center justify-between rounded-lg border border-border/40 bg-surface/40 px-3 py-2 text-left transition hover:border-primary/40 hover:bg-surface/60"
+    >
+      <div>
+        <p className="text-xs text-foreground">{label}</p>
+        {hint && <p className="text-[10px] text-muted-foreground">{hint}</p>}
+      </div>
+      <span className={`relative h-5 w-9 rounded-full ${on ? "bg-primary" : "bg-surface"} transition`}>
+        <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-foreground transition ${on ? "left-4.5" : "left-0.5"}`} />
+      </span>
+    </button>
+  );
+}
+
+import { useQuizzes, useSubmitQuizAnswer, type Quiz } from "@/hooks/useQuizzes";
+export function QuizView() {
+  const { data: quizzes = [], isLoading } = useQuizzes();
+  const [activeQuiz, setActiveQuiz] = useState<Quiz | null>(null);
+  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
+  const [timeRemaining, setTimeRemaining] = useState(10);
+  const submitMutation = useSubmitQuizAnswer();
+
+  if (isLoading) return <div className="h-8 w-8 animate-spin" />;
+
+  return (
+    <Wrap title="Photo Quiz" subtitle="Identify locations">
+       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          {quizzes.map((q) => (
+             <button key={q.id} onClick={() => setActiveQuiz(q)} className="rounded-2xl border border-border/40 bg-gradient-card p-4">
+                <p className="text-sm font-bold text-foreground">{q.question}</p>
+             </button>
+          ))}
+       </div>
+    </Wrap>
+  );
+}
+
+import { useActivityLogs } from "@/hooks/useActivityLogs";
+import { useSavedRoutes } from "@/hooks/useRoute";
+
+export function SavedRoutes() {
+  const { data: routes = [], isLoading } = useSavedRoutes();
+
+  if (isLoading) return <p>Loading routes...</p>;
+
+  return (
+    <Wrap title="Saved Routes" subtitle="Your history">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {routes.map((route) => (
+          <div key={route.id} className="rounded-2xl border border-border/60 bg-gradient-card p-5">
+             <h3 className="text-sm font-bold text-foreground">{route.name}</h3>
+             <p className="text-xs text-muted-foreground">{new Date(route.createdAt).toLocaleDateString()}</p>
+             <button className="mt-4 w-full rounded-full bg-gradient-primary py-2 text-xs font-bold text-white">Replay</button>
+          </div>
+        ))}
+      </div>
+    </Wrap>
+  );
+}
+
+function ActivityList() {
+  const { data: logs = [], isLoading } = useActivityLogs();
+  if (isLoading) return <p>...</p>;
+  return (
+    <div className="space-y-2">
+      {logs.map((log) => (
+        <div key={log.id} className="text-xs text-muted-foreground">
+          {log.action} - {new Date(log.createdAt).toLocaleTimeString()}
+        </div>
+      ))}
     </div>
   );
 }
