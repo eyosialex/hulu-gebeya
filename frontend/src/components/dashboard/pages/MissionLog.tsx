@@ -45,7 +45,7 @@ const CategoryIcons: Record<string, any> = {
 import { Gem } from "lucide-react";
 
 export function MissionLog() {
-  const { missions, isLoading } = useMissions();
+  const { missions, stats: apiStats, isLoading } = useMissions();
   const [activeFilter, setActiveFilter] = useState("all");
 
   const missionFilters = useMemo(() => [
@@ -63,7 +63,7 @@ export function MissionLog() {
       icon: Coffee,
       description: "Food & Drinks missions",
       accent: "text-orange-300",
-      count: missions.filter((m) => m.cat === "food" || m.cat === "Food & Drinks").length,
+      count: missions.filter((m) => m.cat.toLowerCase().includes("food")).length,
     },
     {
       id: "transport",
@@ -71,7 +71,7 @@ export function MissionLog() {
       icon: Bus,
       description: "Transit and mobility spots",
       accent: "text-sky-300",
-      count: missions.filter((m) => m.cat === "transport" || m.cat === "Transport").length,
+      count: missions.filter((m) => m.cat.toLowerCase().includes("transport")).length,
     },
     {
       id: "culture",
@@ -79,7 +79,7 @@ export function MissionLog() {
       icon: Church,
       description: "Heritage and faith locations",
       accent: "text-amber-200",
-      count: missions.filter((m) => m.cat === "culture" || m.cat === "Culture & Faith").length,
+      count: missions.filter((m) => m.cat.toLowerCase().includes("culture")).length,
     },
   ], [missions]);
 
@@ -114,10 +114,10 @@ export function MissionLog() {
   return (
     <PageWrap title="Mission Log" subtitle="Verified captures · AI confidence visible">
       <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4 xl:grid-cols-6">
-        <MiniStat icon={CheckCircle2} label="Verified" value="142" tint="text-success" />
-        <MiniStat icon={Flame} label="This Week" value="9" tint="text-orange-300" />
-        <MiniStat icon={Star} label="High-Value" value="27" tint="text-amber-300" />
-        <MiniStat icon={ShieldCheck} label="Avg AI Trust" value="98.4%" tint="text-primary-glow" />
+        <MiniStat icon={CheckCircle2} label="Verified" value={String(apiStats?.totalVerified || 0)} tint="text-success" />
+        <MiniStat icon={Clock} label="Pending" value={String(apiStats?.totalPending || 0)} tint="text-orange-300" />
+        <MiniStat icon={Star} label="Weekly Goal" value={String(apiStats?.weeklyGoal || 10)} tint="text-amber-300" />
+        <MiniStat icon={ShieldCheck} label="Avg AI Trust" value={(apiStats?.avgTrust || 0) + "%"} tint="text-primary-glow" />
         <MiniStat icon={Target} label="Visible Cards" value={String(stats.visible)} tint="text-sky-300" />
         <MiniStat icon={BadgePercent} label="Mission XP" value={stats.xp.toLocaleString()} tint="text-emerald-300" />
       </div>
@@ -204,8 +204,19 @@ export function MissionLog() {
                   ))}
                 </div>
 
-                <div className="mt-3 flex items-center gap-1.5 text-[10px] font-mono text-muted-foreground">
-                  <MapPin className="h-3 w-3 text-primary-glow" /> {m.gps}
+                <div className="mt-4 flex items-center justify-between border-t border-border/40 pt-4 text-[10px] font-mono text-muted-foreground">
+                  <div className="flex items-center gap-1.5">
+                    <MapPin className="h-3.5 w-3.5 text-destructive animate-pulse" /> 
+                    <span className="font-bold text-foreground/80">{m.gps}</span>
+                  </div>
+                  <a 
+                    href={`https://www.google.com/maps/dir/?api=1&destination=${m.lat},${m.lng}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 rounded-full bg-destructive/10 px-3 py-1 text-[9px] font-black uppercase tracking-tighter text-destructive transition-all hover:bg-destructive/20 hover:scale-105 active:scale-95 shadow-xs"
+                  >
+                    View Map
+                  </a>
                 </div>
 
                 <div className="mt-3 flex items-center justify-between border-t border-border/40 pt-3 text-xs">

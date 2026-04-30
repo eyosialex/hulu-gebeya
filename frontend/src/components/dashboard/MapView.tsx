@@ -1,20 +1,22 @@
-import { useEffect, useRef, useState, useMemo } from "react";
+import { useEffect, useRef, useState } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap, Polyline, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import gsap from "gsap";
 import { useNavigate } from "@tanstack/react-router";
 import { useDashboard } from "./DashboardContext";
-import { Navigation2, MapPin, Camera, ChevronDown, ChevronUp, X, LocateFixed, Loader2, AlertTriangle, Search, Sparkles, Plus, MapPinPlus, Bookmark, CheckCircle } from "lucide-react";
+import { Navigation2, MapPin, Camera, ChevronDown, ChevronUp, X, LocateFixed, Loader2, AlertTriangle, Search, Sparkles, MapPinPlus, Bookmark, CheckCircle, Globe } from "lucide-react";
 import { categories } from "./AppSidebar";
 import { SubmissionForm } from "./SubmissionForm";
 import { AddLocationForm } from "./AddLocationForm";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { useNearbyLocations } from "@/hooks/useNearbyLocations";
-import { useSearch } from "@/hooks/useSearch";
+import { useSearch, type RagResponse } from "@/hooks/useSearch";
 import { useRoute, useSaveRoute } from "@/hooks/useRoute";
+import { useNavigationGuide } from "@/hooks/useNavigationGuide";
 import { useRobotPhysics } from "@/hooks/useRobotPhysics";
 import { AnimatePresence } from "framer-motion";
+import { apiRequest } from "@/lib/api";
 
 type NearbyPlace = {
   lat: number;
@@ -56,27 +58,37 @@ function createPinIcon(category: string) {
   });
 }
 
-const carIcon = new L.DivIcon({
-  className: "smartmap-car",
+const userLocationIcon = new L.DivIcon({
+  className: "smartmap-user-marker",
   html: `
-    <div style="position:relative;width:44px;height:44px;">
+    <div style="position:relative;width:60px;height:60px;display:flex;align-items:center;justify-content:center;">
+      {/* Outer Pulse */}
       <div style="position:absolute;inset:0;border-radius:9999px;
-        background:radial-gradient(circle, rgba(99,160,255,.5) 0%, rgba(99,160,255,0) 70%);
-        animation:pulse 1.6s ease-out infinite;"></div>
-      <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
-        font-size:26px;line-height:1;filter:drop-shadow(0 0 6px rgba(99,160,255,.9));">
-        🚗
-      </div>
+        background:radial-gradient(circle, rgba(239, 68, 68, 0.4) 0%, rgba(239, 68, 68, 0) 70%);
+        animation:pulse 2s ease-out infinite;"></div>
+      
+      {/* Red Location Pin */}
+      <div style="font-size:45px;filter:drop-shadow(0 0 10px #ef4444);z-index:10;">📍</div>
+      
+      {/* Black Directional Arrow */}
+      <div id="user-heading-arrow" style="
+        position:absolute;
+        top:-15px;
+        font-size:35px;
+        color:black;
+        filter:drop-shadow(0 0 4px white);
+        transition: transform 0.3s ease;
+      ">⬆️</div>
     </div>
     <style>
       @keyframes pulse {
         0% { transform: scale(0.6); opacity: 1; }
-        100% { transform: scale(1.6); opacity: 0; }
+        100% { transform: scale(1.8); opacity: 0; }
       }
     </style>
   `,
-  iconSize: [44, 44],
-  iconAnchor: [22, 22],
+  iconSize: [60, 60],
+  iconAnchor: [30, 30],
 });
 
 // Mock data removed in favor of real API fetching
@@ -100,6 +112,14 @@ function MapEvents({ onMapClick }: { onMapClick: (lat: number, lng: number) => v
   return null;
 }
 
+function FlyToLocation({ position }: { position: [number, number] | null }) {
+  const map = useMap();
+  useEffect(() => {
+    if (position) map.flyTo(position, 17, { duration: 1.5 });
+  }, [position, map]);
+  return null;
+}
+
 function Key({ cap }: { cap: string }) {
   return (
     <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-primary/30 bg-black/40 font-bold text-primary-glow shadow-elegant backdrop-blur-md">
@@ -116,17 +136,6 @@ export function MapView() {
   const searchMutation = useSearch();
   const saveRouteMutation = useSaveRoute();
 
-  const handleSaveRoute = () => {
-    if (!routeData || !target || !effectivePos.lat || !effectivePos.lng) return;
-    saveRouteMutation.mutate({
-      name: `Route to ${target.name}`,
-      originLat: effectivePos.lat,
-      originLng: effectivePos.lng,
-      destinationLat: target.lat,
-      destinationLng: target.lng,
-      waypoints: [],
-    });
-  };
 
   const cat = categories.find((c) => c.id === activeCategory);
   
@@ -138,12 +147,50 @@ export function MapView() {
   const [resultsMinimized, setResultsMinimized] = useState(false);
   const [follow, setFollow] = useState(true);
   const [query, setQuery] = useState("");
-  const [aiAnswer, setAiAnswer] = useState<string | null>(null);
+  const [ragData, setRagData] = useState<RagResponse | null>(null);
+  const [flyToPos, setFlyToPos] = useState<[number, number] | null>(null);
+  const [selectedSearchPin, setSelectedSearchPin] = useState<any | null>(null);
+  const [isSimulator, setIsSimulator] = useState(false);
+  const [personaMsg, setPersonaMsg] = useState<string | null>(null);
   const [isAddMode, setIsAddMode] = useState(false);
   const [addCoords, setAddCoords] = useState<{ lat: number; lng: number } | null>(null);
-  const [isSimulator, setIsSimulator] = useState(false);
 
   const effectivePos = useRobotPhysics(lat, lng, isSimulator);
+
+  // Navigation Target Logic
+  const activeDest = selectedTargetId 
+    ? locations.find(l => l.id === selectedTargetId) 
+    : selectedSearchPin;
+  
+  const destCoords = activeDest ? { lat: activeDest.lat, lng: activeDest.lng } : null;
+
+  const { data: routeData, isLoading: isRouteLoading } = useRoute(
+    effectivePos.lat && effectivePos.lng ? { lat: effectivePos.lat, lng: effectivePos.lng } : null,
+    destCoords
+  );
+
+  const { data: navGuide } = useNavigationGuide(
+    effectivePos.lat && effectivePos.lng ? { lat: effectivePos.lat, lng: effectivePos.lng } : null,
+    destCoords
+  );
+
+  // AI Persona Chat Logic
+  useEffect(() => {
+    const fetchChat = async () => {
+      if (!effectivePos.lat || !effectivePos.lng) return;
+      try {
+        const res = await apiRequest(`/missions/persona/chat?lat=${effectivePos.lat}&lng=${effectivePos.lng}`);
+        if (res.message) {
+          setPersonaMsg(res.message);
+          setTimeout(() => setPersonaMsg(null), 8000);
+        }
+      } catch (e) {}
+    };
+    
+    fetchChat();
+    const interval = setInterval(fetchChat, 35000);
+    return () => clearInterval(interval);
+  }, [effectivePos.lat, effectivePos.lng, isSimulator]);
 
   // Mode Toggle Controller
   const toggleSimulator = () => {
@@ -158,14 +205,22 @@ export function MapView() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (!query.trim()) return;
-    setAiAnswer(null);
-    searchMutation.mutate({ 
-      query, 
-      userLat: effectivePos.lat || 0, 
-      userLng: effectivePos.lng || 0 
-    }, {
-      onSuccess: (data) => setAiAnswer(data.answer),
-    });
+    setRagData(null);
+    searchMutation.mutate(
+      { query, userLat: effectivePos.lat || 8.9806, userLng: effectivePos.lng || 38.7578 },
+      { 
+        onSuccess: (data) => {
+          setRagData(data);
+          // Don't show all pins anymore, just reset selection
+          setSelectedSearchPin(null);
+        },
+        onError: (err: any) => {
+          console.error("Search failed:", err);
+          // Assuming toast is available in the project context (it is in imports)
+          import("sonner").then(({ toast }) => toast.error(err.message || "Search failed"));
+        }
+      }
+    );
   };
 
   const cardRef = useRef<HTMLDivElement>(null);
@@ -173,13 +228,13 @@ export function MapView() {
   const searchResultRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (aiAnswer && searchResultRef.current) {
-       gsap.fromTo(searchResultRef.current, 
-         { y: 20, opacity: 0, scale: 0.95 },
-         { y: 0, opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }
-       );
+    if (ragData && searchResultRef.current) {
+      gsap.fromTo(searchResultRef.current,
+        { y: 20, opacity: 0, scale: 0.95 },
+        { y: 0, opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }
+      );
     }
-  }, [aiAnswer]);
+  }, [ragData]);
 
   const nearbyPlaces = activeCategory 
     ? locations.filter((place) => place.category === activeCategory) 
@@ -199,10 +254,19 @@ export function MapView() {
     }
   }, [target]);
 
-  const { data: routeData, isLoading: isRouteLoading } = useRoute(
-    lat && lng ? { lat, lng } : null,
-    target ? { lat: target.lat, lng: target.lng } : null
-  );
+  // routeData is already declared above using effectivePos for better accuracy
+
+  // Declare handleSaveRoute HERE — after routeData, target, effectivePos are all defined
+  const handleSaveRoute = () => {
+    if (!routeData || !target || !effectivePos.lat || !effectivePos.lng) return;
+    saveRouteMutation.mutate({
+      name: `Route to ${target.name}`,
+      originLat: effectivePos.lat,
+      originLng: effectivePos.lng,
+      destinationLat: target.lat,
+      destinationLng: target.lng,
+    });
+  };
 
   useEffect(() => {
     if (!cardRef.current) return;
@@ -229,7 +293,59 @@ export function MapView() {
           </div>
         </div>
       )}
-      {/* Top Search Bar */}
+      {/* AI Navigation Overlay */}
+      <AnimatePresence>
+        {navGuide && activeDest && (
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            className="absolute bottom-24 left-1/2 z-[1000] w-full max-w-md -translate-x-1/2 px-4"
+          >
+            <div className="group relative overflow-hidden rounded-2xl border border-primary/30 bg-black/80 p-4 shadow-elegant backdrop-blur-xl">
+              <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent opacity-50"></div>
+              
+              <div className="relative flex items-center gap-4">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/20 text-primary shadow-glow">
+                  <Navigation2 className="h-6 w-6 animate-pulse" />
+                </div>
+                
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-primary-glow">AI Navigator</p>
+                    <span className="text-[10px] text-muted-foreground">{navGuide.distance}</span>
+                  </div>
+                  <h3 className="mt-0.5 text-sm font-bold text-white line-clamp-1">
+                    {navGuide.instruction}
+                  </h3>
+                  <p className="mt-1 text-[11px] text-muted-foreground line-clamp-1 italic">
+                    "{navGuide.robotPersona}"
+                  </p>
+                </div>
+
+                <button 
+                  onClick={() => {
+                    setSelectedTargetId(null);
+                    setSelectedSearchPin(null);
+                  }}
+                  className="rounded-lg p-2 text-muted-foreground hover:bg-white/5 hover:text-white"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              {/* Progress Bar */}
+              <div className="mt-3 h-1 w-full overflow-hidden rounded-full bg-white/5">
+                <div className="h-full bg-primary shadow-glow transition-all duration-1000" style={{ width: '65%' }}></div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div className="absolute bottom-6 left-6 z-[1000] flex flex-col gap-3">
+        {/* Top Search Bar */}
+      </div>
       <div className="absolute inset-x-0 top-4 z-2000 flex flex-col items-center gap-3 px-4">
         <form
           onSubmit={handleSearch}
@@ -257,30 +373,94 @@ export function MapView() {
         </form>
 
         <AnimatePresence>
-          {aiAnswer && (
+          {ragData && (
             <div
               ref={searchResultRef}
-              className="relative w-full max-w-md overflow-hidden rounded-2xl border border-primary/30 bg-black/90 p-4 shadow-glow backdrop-blur-xl sm:max-w-lg"
+              className="relative w-full max-w-md overflow-hidden rounded-2xl border border-primary/30 bg-black/95 shadow-glow backdrop-blur-xl sm:max-w-lg"
             >
-              <button
-                onClick={() => setAiAnswer(null)}
-                className="absolute right-2 top-2 p-1 text-muted-foreground hover:text-foreground"
-              >
-                <X className="h-3 w-3" />
-              </button>
-              <div className="flex items-start gap-3">
-                <div className="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/20">
-                  <Sparkles className="h-3 w-3 text-primary-glow" />
+              {/* Header */}
+              <div className="flex items-center justify-between gap-2 border-b border-border/30 px-4 py-3">
+                <div className="flex items-center gap-2">
+                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/20">
+                    <Sparkles className="h-3 w-3 text-primary-glow" />
+                  </div>
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-primary-glow">SmartMap AI · RAG Search</span>
+                  {ragData.confidence != null && (
+                    <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[9px] text-primary-glow">
+                      {Math.round(ragData.confidence * 100)}% confidence
+                    </span>
+                  )}
                 </div>
-                <div className="min-w-0">
-                  <p className="text-[10px] uppercase tracking-widest text-primary-glow">
-                    SmartMap AI
-                  </p>
-                  <p className="mt-1 text-xs leading-relaxed text-foreground/90">
-                    {aiAnswer}
-                  </p>
-                </div>
+                <button onClick={() => setRagData(null)} className="p-1 text-muted-foreground hover:text-foreground">
+                  <X className="h-3 w-3" />
+                </button>
               </div>
+
+              {/* AI Answer */}
+              <div className="px-4 py-3">
+                <p className="text-xs leading-relaxed text-foreground/90">{ragData.answer}</p>
+              </div>
+
+              {/* Results */}
+              {(() => {
+                const allResults = [
+                  ...(ragData.sources?.database ?? []),
+                  ...(ragData.sources?.osm ?? []),
+                  ...(ragData.sources?.overpass ?? [])
+                ].slice(0, 5);
+                return allResults.length > 0 ? (
+                  <div className="border-t border-border/30 px-4 pb-3 pt-2">
+                    <p className="mb-2 text-[9px] uppercase tracking-widest text-muted-foreground">
+                      Top Results · {ragData.total_results} found
+                    </p>
+                    <div className="space-y-2">
+                      {allResults.map((r, i) => (
+                        <button 
+                          key={i} 
+                          onClick={() => {
+                            if (r.lat && r.lng) {
+                              setFlyToPos([r.lat, r.lng]);
+                              setFollow(false);
+                              if (r.source === 'database') {
+                                setSelectedTargetId(r.id);
+                                setSelectedSearchPin(null);
+                              } else {
+                                setSelectedSearchPin(r);
+                                setSelectedTargetId(null);
+                              }
+                            }
+                          }}
+                          className="flex w-full items-center justify-between gap-3 rounded-xl border border-border/30 bg-white/5 px-3 py-2 text-left transition-all hover:border-primary/50 hover:bg-white/10 active:scale-[0.98]"
+                        >
+                          <div className="min-w-0">
+                            <p className="truncate text-xs font-medium text-foreground">{r.name}</p>
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                              <span className="text-[9px] uppercase text-muted-foreground">{r.category || 'location'}</span>
+                              {r.source && (
+                                <span className="flex items-center gap-0.5 text-[9px] text-primary-glow">
+                                  <Globe className="h-2.5 w-2.5" />{r.source}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex shrink-0 flex-col items-end gap-1">
+                            {r.distance != null && (
+                              <span className="text-[9px] text-muted-foreground">
+                                {r.distance < 1 ? `${Math.round(r.distance * 1000)}m` : `${r.distance.toFixed(1)}km`}
+                              </span>
+                            )}
+                            {r.trust_score != null && (
+                              <span className="text-[9px] font-medium" style={{ color: r.trust_score > 0.7 ? '#22c55e' : '#f59e0b' }}>
+                                {Math.round(r.trust_score * 100)}% trust
+                              </span>
+                            )}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : null;
+              })()}
             </div>
           )}
         </AnimatePresence>
@@ -345,15 +525,15 @@ export function MapView() {
         </div>
       )}
       <MapContainer
-        center={effectivePos.lat && effectivePos.lng ? [effectivePos.lat, effectivePos.lng] : [6.5244, 3.3792]}
+        center={effectivePos.lat && effectivePos.lng ? [effectivePos.lat, effectivePos.lng] : [8.9806, 38.7578]}
         zoom={14}
         scrollWheelZoom
         className="h-full w-full"
         style={{ background: "#000" }}
       >
         <TileLayer
-          attribution='&copy; OpenStreetMap'
-          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
         {isAddMode && (
@@ -380,16 +560,58 @@ export function MapView() {
             className="animate-pulse shadow-glow"
           />
         )}
+        {selectedSearchPin && (
+          <Marker 
+            position={[selectedSearchPin.lat, selectedSearchPin.lng]} 
+            icon={new L.DivIcon({
+              className: "selected-search-pin",
+              html: `
+                <div style="width:45px;height:45px;display:flex;align-items:center;justify-content:center;filter:drop-shadow(0 0 10px #22c55e); z-index: 999;">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="45" height="45" viewBox="0 0 24 24" fill="#22c55e" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path>
+                    <circle cx="12" cy="10" r="3" fill="white"></circle>
+                  </svg>
+                </div>`,
+              iconSize: [45, 45],
+              iconAnchor: [22.5, 45],
+            })}
+          >
+            <Popup>
+              <div className="p-1">
+                <p className="font-bold text-xs">{selectedSearchPin.name}</p>
+                <p className="text-[9px] uppercase text-muted-foreground">{selectedSearchPin.source} · {selectedSearchPin.category}</p>
+              </div>
+            </Popup>
+          </Marker>
+        )}
+
         {locations
           .filter(p => p.lat !== undefined && p.lng !== undefined)
           .map((p) => (
           <Marker 
             key={p.id} 
             position={[p.lat, p.lng]} 
-            icon={createPinIcon(p.category)}
+            icon={selectedTargetId === p.id 
+              ? new L.DivIcon({
+                  className: "selected-location-pin",
+                  html: `
+                    <div style="width:45px;height:45px;display:flex;align-items:center;justify-content:center;filter:drop-shadow(0 0 10px #22c55e); z-index: 999;">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="45" height="45" viewBox="0 0 24 24" fill="#22c55e" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path>
+                        <circle cx="12" cy="10" r="3" fill="white"></circle>
+                      </svg>
+                    </div>`,
+                  iconSize: [45, 45],
+                  iconAnchor: [22.5, 45],
+                })
+              : createPinIcon(p.category)
+            }
             eventHandlers={{
               click: () => {
+                setFlyToPos([p.lat, p.lng]);
                 setFollow(false);
+                setSelectedTargetId(p.id); // Instant selection
+                setSelectedSearchPin(null);
               },
             }}
           >
@@ -419,12 +641,66 @@ export function MapView() {
         ))}
         {typeof effectivePos.lat === 'number' && typeof effectivePos.lng === 'number' && !isNaN(effectivePos.lat) && !isNaN(effectivePos.lng) && (
           <>
-            <Marker position={[effectivePos.lat, effectivePos.lng]} icon={carIcon}>
+            <Marker position={[effectivePos.lat, effectivePos.lng]} icon={userLocationIcon}>
               <Popup>
                 {isSimulator ? "Robot Mode (Simulated)" : "You are here · Player Car"}
               </Popup>
             </Marker>
+            {personaMsg && (
+              <Marker 
+                position={[effectivePos.lat + 0.0005, effectivePos.lng]} 
+                icon={new L.DivIcon({
+                  className: "persona-bubble",
+                  html: `
+                    <div style="
+                      background: rgba(0,0,0,0.85);
+                      border: 1px solid rgba(99,160,255,0.5);
+                      padding: 8px 12px;
+                      border-radius: 12px;
+                      color: white;
+                      font-size: 11px;
+                      width: 150px;
+                      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+                      position: relative;
+                      animation: float 3s ease-in-out infinite;
+                    ">
+                      ${personaMsg}
+                      <div style="
+                        position: absolute;
+                        bottom: -6px;
+                        left: 50%;
+                        transform: translateX(-50%);
+                        width: 0; 
+                        height: 0; 
+                        border-left: 6px solid transparent;
+                        border-right: 6px solid transparent;
+                        border-top: 6px solid rgba(0,0,0,0.85);
+                      "></div>
+                    </div>
+                    <style>
+                      @keyframes float {
+                        0%, 100% { transform: translateY(0); }
+                        50% { transform: translateY(-5px); }
+                      }
+                    </style>
+                  `,
+                  iconSize: [150, 50],
+                  iconAnchor: [75, 60]
+                })}
+              />
+            )}
+            {routeData?.path && (
+              <Polyline 
+                positions={routeData.path.map(p => [p.lat, p.lng])} 
+                color="#63a0ff" 
+                weight={5}
+                opacity={0.7}
+                dashArray="10, 10"
+                lineJoin="round"
+              />
+            )}
             <FollowPlayer position={[effectivePos.lat, effectivePos.lng]} follow={follow} />
+            <FlyToLocation position={flyToPos} />
           </>
         )}
       </MapContainer>

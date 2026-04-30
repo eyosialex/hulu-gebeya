@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, MapPin, Loader2, Sparkles } from "lucide-react";
+import { X, MapPin, Loader2, Sparkles, Camera } from "lucide-react";
 import { categories } from "./AppSidebar";
 import { useAddLocation } from "@/hooks/useAddLocation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -16,17 +16,33 @@ export function AddLocationForm({
   const [name, setName] = useState("");
   const [category, setCategory] = useState(categories[0].id);
   const [description, setDescription] = useState("");
+  const [image, setImage] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
   const addMutation = useAddLocation();
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImage(file);
+      const reader = new FileReader();
+      reader.onloadend = () => setPreview(reader.result as string);
+      reader.readAsDataURL(file);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    addMutation.mutate({
-      name,
-      category,
-      description,
-      latitude: lat,
-      longitude: lng
-    }, {
+    const fd = new FormData();
+    fd.append("name", name);
+    fd.append("category", category);
+    fd.append("description", description);
+    fd.append("latitude", String(lat));
+    fd.append("longitude", String(lng));
+    if (image) {
+      fd.append("image", image);
+    }
+
+    addMutation.mutate(fd, {
       onSuccess: () => onClose()
     });
   };
@@ -40,7 +56,7 @@ export function AddLocationForm({
       <motion.div 
         initial={{ scale: 0.9, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
-        className="relative w-full max-w-md overflow-hidden rounded-[2.5rem] border border-primary/30 bg-black/90 shadow-glow"
+        className="relative w-full max-w-md overflow-y-auto max-h-[90vh] rounded-[2.5rem] border border-primary/30 bg-black/90 shadow-glow no-scrollbar"
       >
         <div className="absolute inset-x-0 top-0 h-1 bg-gradient-primary" />
         
@@ -75,6 +91,32 @@ export function AddLocationForm({
                 value={name}
                 onChange={(e) => setName(e.target.value)}
               />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Location Photo (Optional)</label>
+              <input 
+                type="file" 
+                accept="image/*" 
+                id="location-image" 
+                className="hidden" 
+                onChange={handleImageChange}
+              />
+              <div 
+                onClick={() => document.getElementById("location-image")?.click()}
+                className={`flex h-40 cursor-pointer items-center justify-center overflow-hidden rounded-2xl border-2 border-dashed transition-all ${
+                  preview ? "border-primary/60 bg-black/40" : "border-border/40 bg-surface/40 hover:border-primary/40"
+                }`}
+              >
+                {preview ? (
+                  <img src={preview} alt="Preview" className="h-full w-full object-cover" />
+                ) : (
+                  <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                    <Camera className="h-8 w-8 text-primary-glow" />
+                    <p className="text-[11px]">Tap to add location photo</p>
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -115,7 +157,7 @@ export function AddLocationForm({
                  <span className="font-bold">Reward for Approval: 250 XP</span>
                </div>
                <p className="mt-1 text-[9px] text-muted-foreground leading-relaxed">
-                 Coordinate Sync: {lat.toFixed(4)}, {lng.toFixed(4)}. Place will be visible once verified by 3 other users.
+                 Coordinate Sync: {lat.toFixed(4)}, {lng.toFixed(4)}.
                </p>
             </div>
 

@@ -12,10 +12,10 @@ type NewLocation = {
 export function useAddLocation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (data: NewLocation) => {
+    mutationFn: async (data: FormData) => {
       return apiRequest("/locations", {
         method: "POST",
-        body: JSON.stringify(data),
+        body: data, // Now passing FormData directly
       });
     },
     onSuccess: () => {
